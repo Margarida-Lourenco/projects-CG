@@ -160,7 +160,7 @@ function createLeg() {
   foot.translateZ(2.5);
   foot.translateX(2.5);
   wheel1.position.set(0, 2.5, 7.5);
-  wheel2.position.set(0, -7.5, 7.5);
+  wheel2.position.set(0, -7.25, 7.5);
  
   leg.add(thigh, calf, wheel1, wheel2, foot);
   
