@@ -113,7 +113,7 @@ function addRobotWaist(obj, x, y, z, material) {
 }
 
 function addWheel(){
-    const geometry = new THREE.CylinderGeometry(5, 5, 5, 15); // radiusTop, radiusBottom, height, radialSegments
+    const geometry = new THREE.CylinderGeometry(4.5, 4.5, 5, 15); // radiusTop, radiusBottom, height, radialSegments
     const mesh = new THREE.Mesh(geometry, material);
     mesh.rotation.x = Math.PI / 2;
     return mesh;
@@ -149,15 +149,21 @@ function createLeg() {
   const calf = new THREE.Mesh(
     new THREE.BoxGeometry(10, 25, 10), material);
 
+  const foot = new THREE.Mesh(
+    new THREE.BoxGeometry(15, 5, 15), material);  
+
   const wheel1 = addWheel();
   const wheel2 = addWheel();
   
   thigh.translateY(17.5);
-  wheel1.position.set(-10, -12.5, -2.5);
-  wheel2.position.set(-10, -25, -2.5);
+  foot.translateY(-15);
+  foot.translateZ(2.5);
+  foot.translateX(2.5);
+  wheel1.position.set(0, 2.5, 7.5);
+  wheel2.position.set(0, -7.5, 7.5);
  
-  leg.add(thigh, calf, wheel1, wheel2);
-
+  leg.add(thigh, calf, wheel1, wheel2, foot);
+  
   return leg;
 }
 
@@ -188,8 +194,9 @@ function createTrailer(x, y, z){
 function createRobot(x, y, z) {
     const robot = new THREE.Object3D();
     
-    const leg1 = createLeg(); leg1.position.set(0, -2.5, 20);
-    const leg2 = createLeg(); leg2.position.set(0, -2.5, 0);
+    const leg1 = createLeg(); leg1.position.set(0, -2.5, 17.5);
+    const leg2 = createLeg(); leg2.position.set(0, -2.5, 2.5);
+    leg2.scale.z = -1; // mirror leg2
     
     const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
 
