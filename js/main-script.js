@@ -61,7 +61,9 @@ function createCamera() {  // alter to create all necessary cameras
   );
   orthoCamera1.position.set(60, 0, 0);
   orthoCamera1.lookAt(0, 0, 0);
+  orthoCamera1.userData.frustumSize = frustumSize;
 
+  // Lateral view
   let orthoCamera2 = new THREE.OrthographicCamera(
     (frustumSize * aspect) / -2,
     (frustumSize * aspect) / 2,
@@ -72,28 +74,27 @@ function createCamera() {  // alter to create all necessary cameras
   );
   orthoCamera2.position.set(0, 0, 60);
   orthoCamera2.lookAt(0, 0, 0);
+  orthoCamera2.userData.frustumSize = frustumSize;
 
+  // Top view
   let orthoCamera3 = new THREE.OrthographicCamera(
     (frustumSize * aspect) / -2,
     (frustumSize * aspect) / 2,
     frustumSize / 2,
     frustumSize / -2,
-    1,
+    0.1,
     1000
   );
   orthoCamera3.position.set(0, 60, 0);
+  orthoCamera3.userData.frustumSize = frustumSize;
   orthoCamera3.lookAt(0, 0, 0);
 
   cameras = [
-    persCamera,
     orthoCamera1,
     orthoCamera2,
     orthoCamera3,
+    persCamera
   ];
-
-
-
-
 }
 
 /////////////////////
@@ -255,13 +256,21 @@ function animate() {
 ////////////////////////////
 function onResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
-
-  if (window.innerHeight > 0 && window.innerWidth > 0) {
-    for (let camera of cameras) {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
+    cameras.forEach((camera) => {
+      if (camera.isPerspectiveCamera) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+      } else if (camera.isOrthographicCamera) {
+        const aspect = window.innerWidth / window.innerHeight;
+        const frustumSize = camera.userData.frustumSize;
+        camera.left = (-frustumSize * aspect) / 2;
+        camera.right = (frustumSize * aspect) / 2;
+        camera.top = frustumSize / 2;
+        camera.bottom = -frustumSize / 2;
+        camera.updateProjectionMatrix();
+      }
     }
-  }
+  );
 }
 
 function swapVisualizationMode() {
