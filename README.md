@@ -4,19 +4,18 @@
 
 - [x] definir fundo com cor clara
 - [x] câmaras 
-- [ ] função onKeyDown (on the making)
+- [ ] função onKeyDown 
   - [x] Camera select
+  - [x] Modelo de Visualização
   - [ ] Angles
-- [ ] Versão simplificada do robô
+  - [ ] Deslocação do reboque
+- [x] Versão simplificada do robô
   - [x] Cabeça
-    - [ ] Olhos e Antenas
-  - [ ] Braços
+    - [x] Olhos e Antenas
+  - [x] Braços
   - [x] Cintura
-    - [ ] Rodas
   - [x] Coxas e pernas
-    - [ ] Simetria
-  - [ ] Pés
-  - [ ] Abdómen
-  - [ ] Rodas (função definida mas não adicionada à imagem)
-- [ ] versão simplificada do reboque
-- [ ] colisões (not yet)
+    - [x] Simetria
+  - [x] Pés
+- [x] versão simplificada do reboque
+- [ ] colisões 
