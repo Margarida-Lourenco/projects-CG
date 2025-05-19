@@ -44,7 +44,7 @@ function createCamera() {  // alter to create all necessary cameras
     1000
   );
   persCamera.position.set(60, 60, 60);
-  persCamera.lookAt(0, 0, 0);
+  persCamera.lookAt(0, 30, 10)
 
   // Orthographic cameras
   const aspect = window.innerWidth / window.innerHeight;
@@ -106,10 +106,22 @@ function createCamera() {  // alter to create all necessary cameras
 ////////////////////////
 
 function addRobotWaist(obj, x, y, z, material) {
-    const geometry = new THREE.BoxGeometry(15, 10, 35);
+    const geometry = new THREE.BoxGeometry(5, 10, 35);
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(x, y+20, z);
+    mesh.position.set(x+5, y+20, z);
     obj.add(mesh);
+
+    const geometry2 = new THREE.BoxGeometry(10, 10, 25);
+    const mesh2 = new THREE.Mesh(geometry2, material);
+    mesh2.position.set(x-2.5, y+20, z);
+
+    obj.add(mesh2);
+
+    const wheel1 = addWheel();
+    const wheel2 = addWheel();
+    wheel1.position.set(0, 25, 25);
+    wheel2.position.set(0, 25, -5);
+    obj.add(wheel1, wheel2);
 }
 
 function addWheel(){
@@ -134,11 +146,37 @@ function addRobotShoulders(obj, x, y, z, material) {
 }
 
 function addRobotHead(obj, x, y, z, material) {
-    const geometry = new THREE.BoxGeometry(10, 10, 10);
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(x, y+20, z);
-    obj.add(mesh);
+    const head = new THREE.Object3D();
+    const face = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 10, 32), material);
+    face.position.set(x, y+20, z);
+
+    const antenna1 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 5, 32), material);
+    antenna1.position.set(x, y+25, z+4.5);
+
+    const antenna2 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 5, 32), material);
+    antenna2.position.set(x, y+25, z-4.5);
+
+    obj.add(face, antenna1, antenna2);
 }
+
+function addRobotArm(obj, x, y, z, material) {
+    const arm = new THREE.Object3D();
+
+    const upper = new THREE.Mesh(new THREE.BoxGeometry(10, 15, 10), material);
+    upper.position.set(0, 20, 0);
+
+    const antennas = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 10, 32), material);
+    antennas.position.set(0, 32.5, 0);
+
+    const lower = new THREE.Mesh(new THREE.BoxGeometry(10, 25, 10), material);
+    lower.position.set(0, 0, 0);
+
+    arm.add(upper, lower, antennas);
+    arm.position.set(x, y, z);
+    
+    obj.add(arm);
+}
+
 
 function createLeg() {
   const leg = new THREE.Object3D();
@@ -205,6 +243,8 @@ function createRobot(x, y, z) {
     addRobotBody(robot, 0, 5, 10, material);
     addRobotShoulders(robot, 0, 20, 10, material);
     addRobotHead(robot, 0, 40, 10, material);
+    addRobotArm(robot, -12.5, 27.5, 32.5, material); // braço esquerdo
+    addRobotArm(robot, -12.5, 27.5, -12.5, material); // braço direito
 
     scene.add(robot);
 
