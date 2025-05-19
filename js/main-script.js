@@ -10,7 +10,6 @@ import { GUI } from "three/addons/libs/lil-gui.module.min.js"; */
 
 let cameras = [];
 let currentCamera = 0;
-let camera;
 let scene;
 let renderer;
 
@@ -35,9 +34,66 @@ function createScene() {
 /* CREATE CAMERA(S) */
 //////////////////////
 function createCamera() {  // alter to create all necessary cameras
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
-  camera.position.set(60, 60, 60);
-  camera.lookAt(0, 30, 10); 
+  let persCamera, orthoCams;
+
+  // Perspective camera
+  persCamera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    1,
+    1000
+  );
+  persCamera.position.set(60, 60, 60);
+  persCamera.lookAt(0, 0, 0);
+
+  // Orthographic cameras
+  const aspect = window.innerWidth / window.innerHeight;
+  const frustumSize = 200;
+
+  // Frontal view
+  let orthoCamera1 = new THREE.OrthographicCamera(
+    (frustumSize * aspect) / -2,
+    (frustumSize * aspect) / 2,
+    frustumSize / 2,
+    frustumSize / -2,
+    1,
+    1000
+  );
+  orthoCamera1.position.set(60, 0, 0);
+  orthoCamera1.lookAt(0, 0, 0);
+
+  let orthoCamera2 = new THREE.OrthographicCamera(
+    (frustumSize * aspect) / -2,
+    (frustumSize * aspect) / 2,
+    frustumSize / 2,
+    frustumSize / -2,
+    1,
+    1000
+  );
+  orthoCamera2.position.set(0, 0, 60);
+  orthoCamera2.lookAt(0, 0, 0);
+
+  let orthoCamera3 = new THREE.OrthographicCamera(
+    (frustumSize * aspect) / -2,
+    (frustumSize * aspect) / 2,
+    frustumSize / 2,
+    frustumSize / -2,
+    1,
+    1000
+  );
+  orthoCamera3.position.set(0, 60, 0);
+  orthoCamera3.lookAt(0, 0, 0);
+
+  cameras = [
+    persCamera,
+    orthoCamera1,
+    orthoCamera2,
+    orthoCamera3,
+  ];
+
+
+
+
 }
 
 /////////////////////
@@ -166,7 +222,7 @@ function update() {}
 /* DISPLAY */
 /////////////
 function render() {
-  renderer.render(scene, camera);
+  renderer.render(scene, cameras[currentCamera]);
 }
 
 ////////////////////////////////
@@ -201,8 +257,10 @@ function onResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 
   if (window.innerHeight > 0 && window.innerWidth > 0) {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
+    for (let camera of cameras) {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    }
   }
 }
 
@@ -222,12 +280,16 @@ function onKeyDown(e) {
   switch (e.keyCode) {
     // switching cameras
     case 49: //1
+      currentCamera = 0;
       break;
     case 50: //2
+      currentCamera = 1;
       break;
     case 51: //3
+      currentCamera = 2;
       break;
     case 52: //4
+      currentCamera = 3;
       break;
 
     case 55: //7
