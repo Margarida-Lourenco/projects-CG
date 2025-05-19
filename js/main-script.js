@@ -26,8 +26,8 @@ function createScene() {
   scene.background = new THREE.Color(0xfffff0);
   scene.add(new THREE.AxesHelper(10));
 
-  createRobot(0, 0, 0);
-  createTrailer(-70, 0, 30);
+  createRobot(0, 0, -50);
+  createTrailer(-90, -5, 30);
 }
 
 //////////////////////
@@ -44,7 +44,7 @@ function createCamera() {  // alter to create all necessary cameras
     1000
   );
   persCamera.position.set(60, 60, 60);
-  persCamera.lookAt(0, 30, 10)
+  persCamera.lookAt(0, 30, 10);
 
   // Orthographic cameras
   const aspect = window.innerWidth / window.innerHeight;
@@ -97,6 +97,10 @@ function createCamera() {  // alter to create all necessary cameras
   ];
 }
 
+function switchToCamera(cam) {
+  currentCamera = cam - 1;
+}
+
 /////////////////////
 /* CREATE LIGHT(S) */
 /////////////////////
@@ -125,7 +129,7 @@ function addRobotWaist(obj, x, y, z, material) {
 }
 
 function addWheel(){
-    const geometry = new THREE.CylinderGeometry(4.5, 4.5, 5, 15); // radiusTop, radiusBottom, height, radialSegments
+    const geometry = new THREE.CylinderGeometry(4.5, 4.5, 5, 16); // radiusTop, radiusBottom, height, radialSegments
     const mesh = new THREE.Mesh(geometry, material);
     mesh.rotation.x = Math.PI / 2;
     return mesh;
@@ -208,7 +212,7 @@ function createLeg() {
 function createTrailer(x, y, z){
   const trailer = new THREE.Object3D();
 
-  const box = new THREE.Mesh(new THREE.BoxGeometry(35, 95, 35), material);
+  const box = new THREE.Mesh(new THREE.BoxGeometry(95, 35, 35), material);
 
   box.position.set(0, 0, 0);
 
@@ -217,14 +221,15 @@ function createTrailer(x, y, z){
   const wheel3 = addWheel();
   const wheel4 = addWheel();
 
-  wheel1.position.set(12.5, -47.5, 12.5);
-  wheel2.position.set(12.5, -34.5, 12.5);
-  wheel3.position.set(12.5, -47.5, -12.5);
-  wheel4.position.set(12.5, -34.5, -12.5);
+  wheel1.position.set(43, -22, -15);
+  wheel2.position.set(33, -22, -15);
+  wheel3.position.set(33, -22, 15);
+  wheel4.position.set(43, -22, 15);
 
   trailer.add(box, wheel1, wheel2, wheel3, wheel4);
 
   trailer.position.set(x, y, z);
+  trailer.rotation.set(0, Math.PI / 2, 0);
   scene.add(trailer);
 }
 
@@ -235,8 +240,6 @@ function createRobot(x, y, z) {
     const leg1 = createLeg(); leg1.position.set(0, -2.5, 17.5);
     const leg2 = createLeg(); leg2.position.set(0, -2.5, 2.5);
     leg2.scale.z = -1; // mirror leg2
-    
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
 
     robot.add(leg1, leg2);
     addRobotWaist(robot, 0, 5, 10, material);
@@ -336,16 +339,16 @@ function onKeyDown(e) {
   switch (e.keyCode) {
     // switching cameras
     case 49: //1
-      currentCamera = 0;
+      switchToCamera(1);
       break;
     case 50: //2
-      currentCamera = 1;
+      switchToCamera(2);
       break;
     case 51: //3
-      currentCamera = 2;
+      switchToCamera(3);
       break;
     case 52: //4
-      currentCamera = 3;
+      switchToCamera(4);
       break;
 
     case 55: //7
