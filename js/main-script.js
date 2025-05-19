@@ -214,7 +214,10 @@ function createTrailer(x, y, z){
 
   const box = new THREE.Mesh(new THREE.BoxGeometry(95, 35, 35), material);
 
+  const connect_piece = new THREE.Mesh(new THREE.BoxGeometry(15, 5, 15), material);
+
   box.position.set(0, 0, 0);
+  connect_piece.position.set(-30, -20, 0);
 
   const wheel1 = addWheel();
   const wheel2 = addWheel();
@@ -226,7 +229,7 @@ function createTrailer(x, y, z){
   wheel3.position.set(33, -22, 15);
   wheel4.position.set(43, -22, 15);
 
-  trailer.add(box, wheel1, wheel2, wheel3, wheel4);
+  trailer.add(box, wheel1, wheel2, wheel3, wheel4, connect_piece);
 
   trailer.position.set(x, y, z);
   trailer.rotation.set(0, Math.PI / 2, 0);
