@@ -13,7 +13,6 @@ let currentCamera = 0;
 let scene;
 let renderer;
 let trailerSpeed = 2;
-const legRotationSpeed = Math.PI / 36; // Speed of leg rotation
 
 let trailer;
 let box, connect_piece;
@@ -32,9 +31,20 @@ let state = {
   up: false,
   down: false,
   left: false,
-  right: false
+  right: false,
+  legsForward: false,
+  legsBackward: false,
+  feetBackward: false,
+  feetForward: false, 
 };
 
+
+const legRotationSpeed = Math.PI / 144; // Speed of leg rotation
+const footRotationSpeed = Math.PI / 90; // Speed of foot rotation
+
+let material = new THREE.MeshBasicMaterial(
+  { color: 0x00ff00, wireframe: true, side: THREE.DoubleSide }
+);
 let materials = {
   black: new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true }),
   blue: new THREE.MeshBasicMaterial({ color: 0x0000ff, wireframe: true }),
@@ -218,9 +228,16 @@ function createLeg() {
     new THREE.BoxGeometry(10, 25, 10), materials.blue);
   calf.position.y = -13.75 - (25 / 2);
 
-  const foot = new THREE.Mesh(
-    new THREE.BoxGeometry(15, 5, 15), materials.blue);
-  foot.position.set(2.5, -38.75 - (5 / 2), 2.5);
+
+  const footGeometry = new THREE.BoxGeometry(15, 5, 15); // width, height, depth
+  // Translate the geometry so its local origin is rearwards, aligned with the first 4th of the leg.
+  footGeometry.translate(5, 0, 0);
+
+  const foot = new THREE.Mesh(footGeometry, materials.blue);
+  foot.name = "foot";
+
+  foot.position.set(-2.5, -38.75 -2.5, 2.5);
+
 
   const wheel1 = addWheel();
   const wheel2 = addWheel();
@@ -318,6 +335,66 @@ function update() {
   if (state.right) {
     trailer.position.addScaledVector(directions.right, trailerSpeed);
   }
+  if (state.legsForward !== state.legsBackward) {
+      const rotSpeed = state.legsForward ? legRotationSpeed : -legRotationSpeed;
+      const robot = scene.getObjectByName("robot");
+      if (robot) {
+        const leg1 = robot.getObjectByName("leg1");
+        const leg2 = robot.getObjectByName("leg2");
+        if (leg1 && leg2) {
+          leg1.rotation.z += rotSpeed;
+          leg2.rotation.z += rotSpeed;
+        }
+      }
+  }
+  if (state.feetBackward !== state.feetForward) {
+    const rotSpeed = state.feetForward ? footRotationSpeed : -footRotationSpeed;
+    const robot = scene.getObjectByName("robot");
+    if (robot) {
+      const leg1 = robot.getObjectByName("leg1");
+      const leg2 = robot.getObjectByName("leg2");
+      if (leg1 && leg2) {
+        const foot1 = leg1.getObjectByName("foot");
+        const foot2 = leg2.getObjectByName("foot");
+        if (foot1) {
+          foot1.rotation.z += rotSpeed;
+        }
+        if (foot2) {
+          foot2.rotation.z += rotSpeed;
+        }
+      }
+    }
+  }
+  if (state.legsForward !== state.legsBackward) {
+      const rotSpeed = state.legsForward ? legRotationSpeed : -legRotationSpeed;
+      const robot = scene.getObjectByName("robot");
+      if (robot) {
+        const leg1 = robot.getObjectByName("leg1");
+        const leg2 = robot.getObjectByName("leg2");
+        if (leg1 && leg2) {
+          leg1.rotation.z += rotSpeed;
+          leg2.rotation.z += rotSpeed;
+        }
+      }
+  }
+  if (state.feetBackward !== state.feetForward) {
+    const rotSpeed = state.feetForward ? footRotationSpeed : -footRotationSpeed;
+    const robot = scene.getObjectByName("robot");
+    if (robot) {
+      const leg1 = robot.getObjectByName("leg1");
+      const leg2 = robot.getObjectByName("leg2");
+      if (leg1 && leg2) {
+        const foot1 = leg1.getObjectByName("foot");
+        const foot2 = leg2.getObjectByName("foot");
+        if (foot1) {
+          foot1.rotation.z += rotSpeed;
+        }
+        if (foot2) {
+          foot2.rotation.z += rotSpeed;
+        }
+      }
+    }
+  }
 }
 
 /////////////
@@ -407,37 +484,19 @@ function onKeyDown(e) {
 
     case 65: //A
     case 97: //a
+      state.feetBackward = true; // Foot rotation left
+      break;
     case 81: //Q
-    case 113: //qw
-      // Alter theta1 angle
+    case 113: //q
+      state.feetForward = true; // Foot rotation right
       break;
     case 83: //S
     case 115: //s
-      {
-        const robot = scene.getObjectByName("robot");
-        if (robot) {
-          const leg1 = robot.getObjectByName("leg1");
-          const leg2 = robot.getObjectByName("leg2");
-          if (leg1 && leg2) {
-            leg1.rotation.z -= legRotationSpeed;
-            leg2.rotation.z -= legRotationSpeed;
-          }
-        }
-      }
+      state.legsBackward = true;
       break;
     case 87: //W
     case 119: //w
-      {
-        const robot = scene.getObjectByName("robot");
-        if (robot) {
-          const leg1 = robot.getObjectByName("leg1");
-          const leg2 = robot.getObjectByName("leg2");
-          if (leg1 && leg2) {
-            leg1.rotation.z += legRotationSpeed;
-            leg2.rotation.z += legRotationSpeed;
-          }
-        }
-      }
+      state.legsForward = true;
       break;
     case 68: //D
     case 100: //d
@@ -483,6 +542,22 @@ function onKeyUp(e) {
       break;
     case 40: // down
       state.down = false;
+      break;
+    case 65: //A
+    case 97: //a
+      state.feetBackward = false;
+      break;
+    case 81: //Q
+    case 113: //q
+      state.feetForward = false;
+      break;
+    case 83: //S
+    case 115: //s
+      state.legsBackward = false;
+      break;
+    case 87: //W
+    case 119: //w
+      state.legsForward = false;
       break;
   }
 }
