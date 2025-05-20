@@ -63,8 +63,8 @@ function createScene() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xfffff0);
 
-  createRobot(0, 0, -70);
-  createTrailer(-40, 0, 20);
+  createRobot(0, 0, -80);
+  createTrailer(-40, 0, 10);
 }
 
 //////////////////////
@@ -158,8 +158,8 @@ function addRobotWaist(obj, x, y, z, material) {
 
     obj.add(mesh2);
 
-    const wheel1 = createWheel();
-    const wheel2 = createWheel();
+    const wheel1 = addWheel();
+    const wheel2 = addWheel();
     wheel1.position.set(0, 25, 25);
     wheel2.position.set(0, 25, -5);
     obj.add(wheel1, wheel2);
@@ -271,15 +271,15 @@ function createTrailer(x, y, z){
   box.position.set(0, 0, 0);
   connect_piece.position.set(0, -20, 30);
 
-  twheel1 = createWheel();
-  twheel2 = createWheel(); 
-  twheel3 = createWheel();
-  twheel4 = createWheel();
+  twheel1 = addWheel();
+  twheel2 = addWheel(); 
+  twheel3 = addWheel();
+  twheel4 = addWheel();
 
-  twheel1.position.set(-15, -22, -43);
-  twheel2.position.set(-15, -22, -33);
-  twheel3.position.set(15, -22, -33);
-  twheel4.position.set(15, -22, -43);
+  twheel1.position.set(-15, -23.5, -41.5);
+  twheel2.position.set(-15, -23.5, -27.5);
+  twheel3.position.set(15, -23.5, -27.5);
+  twheel4.position.set(15, -23.5, -41.5);
 
   twheel1.rotation.z = Math.PI / 2;
   twheel2.rotation.z = Math.PI / 2;
