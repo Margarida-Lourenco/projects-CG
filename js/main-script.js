@@ -216,13 +216,13 @@ function createArm() {
       0
     );
 
-    const antennas = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 10, 32), materials.grey);
-    antennas.position.set(
+    const exhausts = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 10, 32), materials.grey);
+    exhausts.position.set(
       0, 
-      (upper.geometry.parameters.height +antennas.geometry.parameters.height) / 2, 
+      (upper.geometry.parameters.height +exhausts.geometry.parameters.height) / 2, 
       0);
 
-    arm.add(upper, lower, antennas);
+    arm.add(upper, lower, exhausts);
 
     return arm; // Return the created arm object
 }
