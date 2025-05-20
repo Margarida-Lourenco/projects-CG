@@ -14,14 +14,20 @@ let trailer;
 let scene;
 let renderer;
 let speed = 2;
-//let direction;
+
 let directions = {
   up: new THREE.Vector3(0, 1, 0),
   down: new THREE.Vector3(0, -1, 0),
   left: new THREE.Vector3(0, 0, 1),
   right: new THREE.Vector3(0, 0, -1),
 };
-//let moving = false; 
+
+let state = {
+  up: false,
+  down: false,
+  left: false,
+  right: false
+};
 
 
 let material = new THREE.MeshBasicMaterial(
@@ -286,15 +292,19 @@ function updateObjectState(object) {
   object.userData.isMoving = !object.userData.isMoving;
 }
 
-function MoveTrailer(direction) {
-  if (!directions[direction]) {
-    return;
-  }
-  trailer.position.addScaledVector(directions[direction], speed); // missing clock for delta time
-}
-
 function update() {
-  
+  if (state.up) {
+    trailer.position.addScaledVector(directions.up, speed);
+  }
+  if (state.down) {
+    trailer.position.addScaledVector(directions.down, speed);
+  }
+  if (state.left) {
+    trailer.position.addScaledVector(directions.left, speed);
+  }
+  if (state.right) {
+    trailer.position.addScaledVector(directions.right, speed);
+  }
 }
 
 /////////////
@@ -412,19 +422,19 @@ function onKeyDown(e) {
 
     case 37: // left
       updateObjectState(trailer);
-      MoveTrailer('left');
+      state.left = true;
       break;
     case 39: // right
       updateObjectState(trailer);
-      MoveTrailer('right');
+      state.right = true;
       break;
     case 38: // up
       updateObjectState(trailer);
-      MoveTrailer('up');
+      state.up = true;
       break;
     case 40: // down
       updateObjectState(trailer);
-      MoveTrailer('down');
+      state.down = true;
       break;
   }
 }
@@ -436,15 +446,19 @@ function onKeyUp(e) {
   switch (e.keyCode) {
     case 37: // left
       updateObjectState(trailer);
+      state.left = false;
       break;
     case 39: // right
       updateObjectState(trailer);
+      state.right = false;
       break;
     case 38: // up
       updateObjectState(trailer);
+      state.up = false;
       break;
     case 40: // down
       updateObjectState(trailer);
+      state.down = false;
       break;
   }
 }
