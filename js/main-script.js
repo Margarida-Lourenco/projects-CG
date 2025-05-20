@@ -288,10 +288,6 @@ function handleCollisions() {}
 /* UPDATE */
 ////////////
 
-function updateObjectState(object) {
-  object.userData.isMoving = !object.userData.isMoving;
-}
-
 function update() {
   if (state.up) {
     trailer.position.addScaledVector(directions.up, speed);
@@ -421,19 +417,15 @@ function onKeyDown(e) {
       break;
 
     case 37: // left
-      updateObjectState(trailer);
       state.left = true;
       break;
     case 39: // right
-      updateObjectState(trailer);
       state.right = true;
       break;
     case 38: // up
-      updateObjectState(trailer);
       state.up = true;
       break;
     case 40: // down
-      updateObjectState(trailer);
       state.down = true;
       break;
   }
@@ -445,19 +437,15 @@ function onKeyDown(e) {
 function onKeyUp(e) {
   switch (e.keyCode) {
     case 37: // left
-      updateObjectState(trailer);
       state.left = false;
       break;
     case 39: // right
-      updateObjectState(trailer);
       state.right = false;
       break;
     case 38: // up
-      updateObjectState(trailer);
       state.up = false;
       break;
     case 40: // down
-      updateObjectState(trailer);
       state.down = false;
       break;
   }
