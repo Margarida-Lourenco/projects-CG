@@ -39,6 +39,8 @@ let state = {
   armOutward: false, // Added for moving arms outwards
   armInward: false,  // Added for moving arms inwards
   armTranslation: 0, // Added for arm translation
+  headBackward: false,
+  headForward: false,
 };
 
 ///////////////
@@ -61,6 +63,8 @@ const maxFootRotation = 0;
 const minFootRotation = -Math.PI / 2;
 const armTranslationSpeed = 0.5; // Speed for arm translation
 const armTranslationLimit = 10; // Limit for arm translation
+const maxHeadRotation = Math.PI / 2;
+const minHeadRotation = 0;
 
 /////////////////////
 /* CREATE SCENE(S) */
@@ -188,18 +192,34 @@ function addRobotShoulders(obj, x, y, z, material) {
     obj.add(mesh);
 }
 
-function addRobotHead(obj, x, y, z, material) {
-    const head = new THREE.Object3D();
-    const face = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 10, 32), material);
-    face.position.set(x, y+20, z);
+function createHead() {
+      const head = new THREE.Object3D();
 
-    const antenna1 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 5, 32), material);
-    antenna1.position.set(x, y+25, z+4.5);
+      const face = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 10, 32), materials.blue);
 
-    const antenna2 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 5, 32), material);
-    antenna2.position.set(x, y+25, z-4.5);
+      const antennaR = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 5, 32), materials.blue);
+      antennaR.position.set(
+        0,
+        (face.geometry.parameters.height + antennaR.geometry.parameters.height) / 2,
+        4.5
+      );
 
-    obj.add(face, antenna1, antenna2);
+      const antennaL = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 5, 32), materials.blue);
+      antennaL.position.set(
+        0,
+        (face.geometry.parameters.height + antennaL.geometry.parameters.height) / 2,
+        -4.5
+      );
+
+      head.add(face, antennaL, antennaR);
+
+      // Shift the entire assembly upwards along local Y.
+      // This effectively lowers the pivot for rotation to the bottom of the face.
+      for (let i = 0; i < head.children.length; i++) {
+        head.children[i].position.y += face.geometry.parameters.height;
+      }
+
+      return head;
 }
 
 // Root of arm is middle of upper arm
@@ -329,7 +349,10 @@ function createRobot(x, y, z) {
     addRobotWaist(robot, 0, 5, 10, materials.grey);
     addRobotBody(robot, 0, 5, 10, materials.red);
     addRobotShoulders(robot, 0, 20, 10, materials.red);
-    addRobotHead(robot, 0, 40, 10, materials.blue);
+
+    const head = createHead();
+    head.name = "head";
+    head.position.set(0, 50, 10);
 
     const leftArm = createArm(); // braço esquerdo
     leftArm.name = "leftArm";
@@ -339,7 +362,7 @@ function createRobot(x, y, z) {
     rightArm.name = "rightArm";
     rightArm.position.set(-12.5, 47.5, -12.5);
 
-    robot.add(leg1, leg2, leftArm, rightArm);
+    robot.add(head, leg1, leg2, leftArm, rightArm);
     scene.add(robot);
 
     robot.position.set(x, y, z);
@@ -405,6 +428,19 @@ function update() {
         }
       }
     }
+
+    // Head retraction
+    const head = robotObj.getObjectByName("head");
+    if (head) {
+      if (state.headBackward !== state.headForward) {
+        console.log("headBackward", state.headBackward);
+        const rotDirection = state.headForward ? rotationSpeed : -rotationSpeed;
+        if (head.rotation.z + rotDirection > minHeadRotation && head.rotation.z + rotDirection < maxHeadRotation) {
+          head.rotation.z += rotDirection;
+        }
+      }
+    }
+
   
 
   // Arm translation
@@ -538,8 +574,11 @@ function onKeyDown(e) {
       break;
     case 70: //F
     case 102: //f
+      state.headBackward = true;
+      break;
     case 82: //R
     case 114: //r
+      state.headForward = true;
       // Alter delta3 angle
       break;
 
@@ -598,6 +637,15 @@ function onKeyUp(e) {
     case 69: //E
     case 101: //e
       state.armInward = false;
+      break;
+
+    case 70: //F
+    case 102: //f
+      state.headBackward = false;
+      break;
+    case 82: //R
+    case 114: //r
+      state.headForward = false;
       break;
   }
 }
