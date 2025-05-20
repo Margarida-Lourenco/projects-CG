@@ -38,20 +38,23 @@ let state = {
   feetForward: false, 
 };
 
+///////////////
+/* CONSTANTS */
+///////////////
 
-const legRotationSpeed = Math.PI / 144; // Speed of leg rotation
-const footRotationSpeed = Math.PI / 90; // Speed of foot rotation
-
-let material = new THREE.MeshBasicMaterial(
-  { color: 0x00ff00, wireframe: true, side: THREE.DoubleSide }
-);
-let materials = {
+const materials = {
   black: new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true }),
   blue: new THREE.MeshBasicMaterial({ color: 0x0000ff, wireframe: true }),
   red: new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true }),
   grey: new THREE.MeshBasicMaterial({ color: 0x9e948b, wireframe: true })
 };
 
+const legRotationSpeed = Math.PI / 288;
+const footRotationSpeed = Math.PI / 144;
+const maxLegRotation = 0; 
+const minLegRotation = -Math.PI / 2;
+const maxFootRotation = 0; 
+const minFootRotation = -Math.PI / 2;
 
 /////////////////////
 /* CREATE SCENE(S) */
@@ -333,64 +336,39 @@ function update() {
   if (state.right) {
     trailer.position.addScaledVector(directions.right, trailerSpeed);
   }
-  if (state.legsForward !== state.legsBackward) {
-      const rotSpeed = state.legsForward ? legRotationSpeed : -legRotationSpeed;
-      const robot = scene.getObjectByName("robot");
-      if (robot) {
-        const leg1 = robot.getObjectByName("leg1");
-        const leg2 = robot.getObjectByName("leg2");
-        if (leg1 && leg2) {
-          leg1.rotation.z += rotSpeed;
-          leg2.rotation.z += rotSpeed;
-        }
-      }
+
+  const robot = scene.getObjectByName("robot");
+  if (!robot) {
+    return; // No robot, no more updates needed for it
   }
-  if (state.feetBackward !== state.feetForward) {
-    const rotSpeed = state.feetForward ? footRotationSpeed : -footRotationSpeed;
-    const robot = scene.getObjectByName("robot");
-    if (robot) {
-      const leg1 = robot.getObjectByName("leg1");
-      const leg2 = robot.getObjectByName("leg2");
-      if (leg1 && leg2) {
-        const foot1 = leg1.getObjectByName("foot");
-        const foot2 = leg2.getObjectByName("foot");
-        if (foot1) {
-          foot1.rotation.z += rotSpeed;
-        }
-        if (foot2) {
-          foot2.rotation.z += rotSpeed;
-        }
-      }
+
+  const leg1 = robot.getObjectByName("leg1");
+  const leg2 = robot.getObjectByName("leg2");
+  if (!leg1 || !leg2) {
+    return;
+  }
+
+  // Leg rotation
+  if (state.legsForward !== state.legsBackward) {
+    const rotSpeed = state.legsForward ? legRotationSpeed : -legRotationSpeed;
+    // Leg1 and 2 rotation is linked.
+    if (leg1.rotation.z + rotSpeed > minLegRotation && leg1.rotation.z + rotSpeed < maxLegRotation) {
+      leg1.rotation.z += rotSpeed;
+      leg2.rotation.z += rotSpeed;
     }
   }
-  if (state.legsForward !== state.legsBackward) {
-      const rotSpeed = state.legsForward ? legRotationSpeed : -legRotationSpeed;
-      const robot = scene.getObjectByName("robot");
-      if (robot) {
-        const leg1 = robot.getObjectByName("leg1");
-        const leg2 = robot.getObjectByName("leg2");
-        if (leg1 && leg2) {
-          leg1.rotation.z += rotSpeed;
-          leg2.rotation.z += rotSpeed;
-        }
-      }
+
+  const foot1 = leg1.getObjectByName("foot");
+  const foot2 = leg2.getObjectByName("foot");
+  if (!foot1 || !foot2) {
+    return; 
   }
+  
   if (state.feetBackward !== state.feetForward) {
     const rotSpeed = state.feetForward ? footRotationSpeed : -footRotationSpeed;
-    const robot = scene.getObjectByName("robot");
-    if (robot) {
-      const leg1 = robot.getObjectByName("leg1");
-      const leg2 = robot.getObjectByName("leg2");
-      if (leg1 && leg2) {
-        const foot1 = leg1.getObjectByName("foot");
-        const foot2 = leg2.getObjectByName("foot");
-        if (foot1) {
-          foot1.rotation.z += rotSpeed;
-        }
-        if (foot2) {
-          foot2.rotation.z += rotSpeed;
-        }
-      }
+    if ((foot1.rotation.z + rotSpeed >= minFootRotation && foot1.rotation.z + rotSpeed <= maxFootRotation)) {
+      foot1.rotation.z += rotSpeed;
+      foot2.rotation.z += rotSpeed;
     }
   }
 }
