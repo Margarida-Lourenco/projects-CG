@@ -1,8 +1,8 @@
 import * as THREE from "three";
-/* import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { VRButton } from "three/addons/webxr/VRButton.js";
 import * as Stats from "three/addons/libs/stats.module.js";
-import { GUI } from "three/addons/libs/lil-gui.module.min.js"; */
+import { GUI } from "three/addons/libs/lil-gui.module.min.js"; 
 
 //////////////////////
 /* GLOBAL VARIABLES */
@@ -10,8 +10,19 @@ import { GUI } from "three/addons/libs/lil-gui.module.min.js"; */
 
 let cameras = [];
 let currentCamera = 0;
+let trailer;
 let scene;
 let renderer;
+let speed = 2;
+//let direction;
+let directions = {
+  up: new THREE.Vector3(0, 1, 0),
+  down: new THREE.Vector3(0, -1, 0),
+  left: new THREE.Vector3(0, 0, 1),
+  right: new THREE.Vector3(0, 0, -1),
+};
+//let moving = false; 
+
 
 let material = new THREE.MeshBasicMaterial(
   { color: 0x00ff00, wireframe: true, side: THREE.DoubleSide }
@@ -33,8 +44,8 @@ function createScene() {
 //////////////////////
 /* CREATE CAMERA(S) */
 //////////////////////
-function createCamera() {  // alter to create all necessary cameras
-  let persCamera, orthoCams;
+function createCamera() { 
+  let persCamera;
 
   // Perspective camera
   persCamera = new THREE.PerspectiveCamera(
@@ -210,7 +221,7 @@ function createLeg() {
 }
 
 function createTrailer(x, y, z){
-  const trailer = new THREE.Object3D();
+  trailer = new THREE.Object3D();
 
   const box = new THREE.Mesh(new THREE.BoxGeometry(95, 35, 35), material);
 
@@ -270,7 +281,21 @@ function handleCollisions() {}
 ////////////
 /* UPDATE */
 ////////////
-function update() {}
+
+function updateObjectState(object) {
+  object.userData.isMoving = !object.userData.isMoving;
+}
+
+function MoveTrailer(direction) {
+  if (!directions[direction]) {
+    return;
+  }
+  trailer.position.addScaledVector(directions[direction], speed); // missing clock for delta time
+}
+
+function update() {
+  
+}
 
 /////////////
 /* DISPLAY */
@@ -294,12 +319,14 @@ function init() {
 
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("resize", onResize);
+  window.addEventListener("keyup", onKeyUp);
 }
 
 /////////////////////
 /* ANIMATION CYCLE */
 /////////////////////
 function animate() {
+  update();
   render();
   requestAnimationFrame(animate);
 }
@@ -382,13 +409,45 @@ function onKeyDown(e) {
     case 114: //r
       // Alter delta3 angle
       break;
+
+    case 37: // left
+      updateObjectState(trailer);
+      MoveTrailer('left');
+      break;
+    case 39: // right
+      updateObjectState(trailer);
+      MoveTrailer('right');
+      break;
+    case 38: // up
+      updateObjectState(trailer);
+      MoveTrailer('up');
+      break;
+    case 40: // down
+      updateObjectState(trailer);
+      MoveTrailer('down');
+      break;
   }
 }
 
 ///////////////////////
 /* KEY UP CALLBACK */
 ///////////////////////
-function onKeyUp(e) {}
+function onKeyUp(e) {
+  switch (e.keyCode) {
+    case 37: // left
+      updateObjectState(trailer);
+      break;
+    case 39: // right
+      updateObjectState(trailer);
+      break;
+    case 38: // up
+      updateObjectState(trailer);
+      break;
+    case 40: // down
+      updateObjectState(trailer);
+      break;
+  }
+}
 
 init();
 animate();
