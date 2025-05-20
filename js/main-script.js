@@ -218,15 +218,15 @@ function addRobotArm(obj, x, y, z, material) {
 
 
 function createLeg() {
-  const leg = new THREE.Object3D(); // Origin is now the top of the thigh
+  const leg = new THREE.Object3D(); 
 
   const thigh = new THREE.Mesh(
     new THREE.BoxGeometry(7.5, 10, 7.5), materials.grey);
-  thigh.position.y = -8.75;
+  thigh.position.y = -10;
 
   const calf = new THREE.Mesh(
     new THREE.BoxGeometry(10, 25, 10), materials.blue);
-  calf.position.y = -13.75 - (25 / 2);
+  calf.position.y = -15 - (25 / 2);
 
 
   const footGeometry = new THREE.BoxGeometry(15, 5, 15); // width, height, depth
@@ -236,7 +236,7 @@ function createLeg() {
   const foot = new THREE.Mesh(footGeometry, materials.blue);
   foot.name = "foot";
 
-  foot.position.set(-2.5, -38.75 -2.5, 2.5);
+  foot.position.set(-2.5, -40 -2.5, 2.5);
 
 
   const wheel1 = addWheel();
@@ -281,18 +281,16 @@ function createTrailer(x, y, z){
 
 function createRobot(x, y, z) {
     robot = new THREE.Object3D();
-    robot.name = "robot"; // Assign a name to the robot object
+    robot.name = "robot";
     
     const leg1 = createLeg();
-    leg1.name = "leg1"; // Assign a name to leg1
-    // Adjust Y position: Original leg object was at y=-2.5, original thigh top was at y=22.5 relative to leg obj.
-    // Absolute Y of thigh top = -2.5 + 22.5 = 20. This is the new Y for the leg object.
-    leg1.position.set(0, 23.75, 17.5);
+    leg1.name = "leg1";
+    leg1.position.set(0, 25, 17.5);
 
     const leg2 = createLeg();
     leg2.name = "leg2";
-    leg2.position.set(0, 23.75, 2.5); // Same Y adjustment, different Z for leg2
-    leg2.scale.z = -1; // mirror leg2
+    leg2.position.set(0, 25, 2.5);
+    leg2.scale.z = -1;
 
     addRobotWaist(robot, 0, 5, 10, materials.grey);
     addRobotBody(robot, 0, 5, 10, materials.red);
