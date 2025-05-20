@@ -49,10 +49,11 @@ const materials = {
   grey: new THREE.MeshBasicMaterial({ color: 0x9e948b, wireframe: true })
 };
 
-const legRotationSpeed = Math.PI / 288;
-const footRotationSpeed = Math.PI / 144;
+const rotationSpeed = Math.PI / 288;
+
 const maxLegRotation = 0; 
 const minLegRotation = -Math.PI / 2;
+
 const maxFootRotation = 0; 
 const minFootRotation = -Math.PI / 2;
 
@@ -137,10 +138,6 @@ function createCamera() {
 function switchToCamera(cam) {
   currentCamera = cam - 1;
 }
-
-/////////////////////
-/* CREATE LIGHT(S) */
-/////////////////////
 
 ////////////////////////
 /* CREATE OBJECT3D(S) */
@@ -302,7 +299,6 @@ function createTrailer(x, y, z){
   trailer.add(box, twheel1, twheel2, twheel3, twheel4, connect_piece);
 
   trailer.position.set(x, y, z);
-  //trailer.rotation.set(0, Math.PI / 2, 0);
   
   scene.add(trailer);
 }
@@ -311,7 +307,7 @@ function createTrailer(x, y, z){
 function createRobot(x, y, z) {
     robot = new THREE.Object3D();
     robot.add(new THREE.AxesHelper(10));
-    robot.name = "robot"; // Assign a name to the robot object
+    robot.name = "robot";
     
     const leg1 = createLeg();
     leg1.name = "leg1";
@@ -377,11 +373,11 @@ function update() {
 
   // Leg rotation
   if (state.legsForward !== state.legsBackward) {
-    const rotSpeed = state.legsForward ? legRotationSpeed : -legRotationSpeed;
+    const rotDirection = state.legsForward ? rotationSpeed : -rotationSpeed;
     // Leg1 and 2 rotation is linked.
-    if (leg1.rotation.z + rotSpeed > minLegRotation && leg1.rotation.z + rotSpeed < maxLegRotation) {
-      leg1.rotation.z += rotSpeed;
-      leg2.rotation.z += rotSpeed;
+    if (leg1.rotation.z + rotDirection > minLegRotation && leg1.rotation.z + rotDirection < maxLegRotation) {
+      leg1.rotation.z += rotDirection;
+      leg2.rotation.z += rotDirection;
     }
   }
 
@@ -392,10 +388,10 @@ function update() {
   }
   
   if (state.feetBackward !== state.feetForward) {
-    const rotSpeed = state.feetForward ? footRotationSpeed : -footRotationSpeed;
-    if ((foot1.rotation.z + rotSpeed >= minFootRotation && foot1.rotation.z + rotSpeed <= maxFootRotation)) {
-      foot1.rotation.z += rotSpeed;
-      foot2.rotation.z += rotSpeed;
+    const rotDirection = state.feetForward ? rotationSpeed : -rotationSpeed;
+    if ((foot1.rotation.z + rotDirection >= minFootRotation && foot1.rotation.z + rotDirection <= maxFootRotation)) {
+      foot1.rotation.z += rotDirection;
+      foot2.rotation.z += rotDirection;
     }
   }
 }
@@ -487,11 +483,11 @@ function onKeyDown(e) {
 
     case 65: //A
     case 97: //a
-      state.feetBackward = true; // Foot rotation left
+      state.feetBackward = true; 
       break;
     case 81: //Q
     case 113: //q
-      state.feetForward = true; // Foot rotation right
+      state.feetForward = true; 
       break;
     case 83: //S
     case 115: //s
