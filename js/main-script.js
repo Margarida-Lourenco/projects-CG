@@ -30,6 +30,8 @@ let state = {
 };
 
 
+const legRotationSpeed = Math.PI / 36; // Speed of leg rotation
+
 let material = new THREE.MeshBasicMaterial(
   { color: 0x00ff00, wireframe: true, side: THREE.DoubleSide }
 );
@@ -200,29 +202,28 @@ function addRobotArm(obj, x, y, z, material) {
 
 
 function createLeg() {
-  const leg = new THREE.Object3D();
+  const leg = new THREE.Object3D(); // Origin is now the top of the thigh
 
   const thigh = new THREE.Mesh(
     new THREE.BoxGeometry(7.5, 10, 7.5), material);
+  thigh.position.y = -8.75;
 
   const calf = new THREE.Mesh(
     new THREE.BoxGeometry(10, 25, 10), material);
+  calf.position.y = -13.75 - (25 / 2);
 
   const foot = new THREE.Mesh(
-    new THREE.BoxGeometry(15, 5, 15), material);  
+    new THREE.BoxGeometry(15, 5, 15), material);
+  foot.position.set(2.5, -38.75 - (5 / 2), 2.5);
 
   const wheel1 = addWheel();
   const wheel2 = addWheel();
-  
-  thigh.translateY(17.5);
-  foot.translateY(-15);
-  foot.translateZ(2.5);
-  foot.translateX(2.5);
-  wheel1.position.set(0, 2.5, 7.5);
-  wheel2.position.set(0, -7.25, 7.5);
- 
-  leg.add(thigh, calf, wheel1, wheel2, foot);
-  
+
+  wheel1.position.set(0, -26.25 + 2.5, 7.5);
+  wheel2.position.set(0, -26.25 - 7.25, 7.5);
+
+  leg.add(thigh, calf, foot, wheel1, wheel2);
+
   return leg;
 }
 
@@ -256,9 +257,17 @@ function createTrailer(x, y, z){
 
 function createRobot(x, y, z) {
     const robot = new THREE.Object3D();
+    robot.name = "robot"; // Assign a name to the robot object
     
-    const leg1 = createLeg(); leg1.position.set(0, -2.5, 17.5);
-    const leg2 = createLeg(); leg2.position.set(0, -2.5, 2.5);
+    const leg1 = createLeg();
+    leg1.name = "leg1"; // Assign a name to leg1
+    // Adjust Y position: Original leg object was at y=-2.5, original thigh top was at y=22.5 relative to leg obj.
+    // Absolute Y of thigh top = -2.5 + 22.5 = 20. This is the new Y for the leg object.
+    leg1.position.set(0, 23.75, 17.5);
+
+    const leg2 = createLeg();
+    leg2.name = "leg2";
+    leg2.position.set(0, 23.75, 2.5); // Same Y adjustment, different Z for leg2
     leg2.scale.z = -1; // mirror leg2
 
     robot.add(leg1, leg2);
@@ -394,14 +403,36 @@ function onKeyDown(e) {
     case 65: //A
     case 97: //a
     case 81: //Q
-    case 113: //q
+    case 113: //qw
       // Alter theta1 angle
       break;
     case 83: //S
     case 115: //s
+      {
+        const robot = scene.getObjectByName("robot");
+        if (robot) {
+          const leg1 = robot.getObjectByName("leg1");
+          const leg2 = robot.getObjectByName("leg2");
+          if (leg1 && leg2) {
+            leg1.rotation.z -= legRotationSpeed;
+            leg2.rotation.z -= legRotationSpeed;
+          }
+        }
+      }
+      break;
     case 87: //W
     case 119: //w
-      // Alter theta2 angle
+      {
+        const robot = scene.getObjectByName("robot");
+        if (robot) {
+          const leg1 = robot.getObjectByName("leg1");
+          const leg2 = robot.getObjectByName("leg2");
+          if (leg1 && leg2) {
+            leg1.rotation.z += legRotationSpeed;
+            leg2.rotation.z += legRotationSpeed;
+          }
+        }
+      }
       break;
     case 68: //D
     case 100: //d
