@@ -10,10 +10,16 @@ import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 
 let cameras = [];
 let currentCamera = 0;
-let trailer;
 let scene;
 let renderer;
-let speed = 2;
+let trailerSpeed = 2;
+const legRotationSpeed = Math.PI / 36; // Speed of leg rotation
+
+let trailer;
+let box, connect_piece;
+let twheel1, twheel2, twheel3, twheel4;
+
+let robot;
 
 let directions = {
   up: new THREE.Vector3(0, 1, 0),
@@ -29,12 +35,12 @@ let state = {
   right: false
 };
 
-
-const legRotationSpeed = Math.PI / 36; // Speed of leg rotation
-
-let material = new THREE.MeshBasicMaterial(
-  { color: 0x00ff00, wireframe: true, side: THREE.DoubleSide }
-);
+let materials = {
+  black: new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true }),
+  blue: new THREE.MeshBasicMaterial({ color: 0x0000ff, wireframe: true }),
+  red: new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true }),
+  grey: new THREE.MeshBasicMaterial({ color: 0x9e948b, wireframe: true })
+};
 
 
 /////////////////////
@@ -149,7 +155,7 @@ function addRobotWaist(obj, x, y, z, material) {
 
 function addWheel(){
     const geometry = new THREE.CylinderGeometry(4.5, 4.5, 5, 16); // radiusTop, radiusBottom, height, radialSegments
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new THREE.Mesh(geometry, materials.black);
     mesh.rotation.x = Math.PI / 2;
     return mesh;
 }
@@ -188,7 +194,7 @@ function addRobotArm(obj, x, y, z, material) {
     const upper = new THREE.Mesh(new THREE.BoxGeometry(10, 15, 10), material);
     upper.position.set(0, 20, 0);
 
-    const antennas = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 10, 32), material);
+    const antennas = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 10, 32), materials.grey);
     antennas.position.set(0, 32.5, 0);
 
     const lower = new THREE.Mesh(new THREE.BoxGeometry(10, 25, 10), material);
@@ -205,15 +211,15 @@ function createLeg() {
   const leg = new THREE.Object3D(); // Origin is now the top of the thigh
 
   const thigh = new THREE.Mesh(
-    new THREE.BoxGeometry(7.5, 10, 7.5), material);
+    new THREE.BoxGeometry(7.5, 10, 7.5), materials.grey);
   thigh.position.y = -8.75;
 
   const calf = new THREE.Mesh(
-    new THREE.BoxGeometry(10, 25, 10), material);
+    new THREE.BoxGeometry(10, 25, 10), materials.blue);
   calf.position.y = -13.75 - (25 / 2);
 
   const foot = new THREE.Mesh(
-    new THREE.BoxGeometry(15, 5, 15), material);
+    new THREE.BoxGeometry(15, 5, 15), materials.blue);
   foot.position.set(2.5, -38.75 - (5 / 2), 2.5);
 
   const wheel1 = addWheel();
@@ -230,33 +236,34 @@ function createLeg() {
 function createTrailer(x, y, z){
   trailer = new THREE.Object3D();
 
-  const box = new THREE.Mesh(new THREE.BoxGeometry(95, 35, 35), material);
+  box = new THREE.Mesh(new THREE.BoxGeometry(95, 35, 35), materials.grey);
 
-  const connect_piece = new THREE.Mesh(new THREE.BoxGeometry(15, 5, 15), material);
+  connect_piece = new THREE.Mesh(new THREE.BoxGeometry(15, 5, 15), materials.grey);
 
   box.position.set(0, 0, 0);
   connect_piece.position.set(-30, -20, 0);
 
-  const wheel1 = addWheel();
-  const wheel2 = addWheel();
-  const wheel3 = addWheel();
-  const wheel4 = addWheel();
+  twheel1 = addWheel();
+  twheel2 = addWheel(); 
+  twheel3 = addWheel();
+  twheel4 = addWheel();
 
-  wheel1.position.set(43, -22, -15);
-  wheel2.position.set(33, -22, -15);
-  wheel3.position.set(33, -22, 15);
-  wheel4.position.set(43, -22, 15);
+  twheel1.position.set(43, -22, -15);
+  twheel2.position.set(33, -22, -15);
+  twheel3.position.set(33, -22, 15);
+  twheel4.position.set(43, -22, 15);
 
-  trailer.add(box, wheel1, wheel2, wheel3, wheel4, connect_piece);
+  trailer.add(box, twheel1, twheel2, twheel3, twheel4, connect_piece);
 
   trailer.position.set(x, y, z);
   trailer.rotation.set(0, Math.PI / 2, 0);
+  
   scene.add(trailer);
 }
 
 
 function createRobot(x, y, z) {
-    const robot = new THREE.Object3D();
+    robot = new THREE.Object3D();
     robot.name = "robot"; // Assign a name to the robot object
     
     const leg1 = createLeg();
@@ -270,14 +277,15 @@ function createRobot(x, y, z) {
     leg2.position.set(0, 23.75, 2.5); // Same Y adjustment, different Z for leg2
     leg2.scale.z = -1; // mirror leg2
 
-    robot.add(leg1, leg2);
-    addRobotWaist(robot, 0, 5, 10, material);
-    addRobotBody(robot, 0, 5, 10, material);
-    addRobotShoulders(robot, 0, 20, 10, material);
-    addRobotHead(robot, 0, 40, 10, material);
-    addRobotArm(robot, -12.5, 27.5, 32.5, material); // braço esquerdo
-    addRobotArm(robot, -12.5, 27.5, -12.5, material); // braço direito
+    addRobotWaist(robot, 0, 5, 10, materials.grey);
+    addRobotBody(robot, 0, 5, 10, materials.red);
+    addRobotShoulders(robot, 0, 20, 10, materials.red);
+    addRobotHead(robot, 0, 40, 10, materials.blue);
+    addRobotArm(robot, -12.5, 27.5, 32.5, materials.red); // braço esquerdo
+    addRobotArm(robot, -12.5, 27.5, -12.5, materials.red); // braço direito
 
+    
+    robot.add(leg1, leg2, );
     scene.add(robot);
 
     robot.position.set(x, y, z);
@@ -299,16 +307,16 @@ function handleCollisions() {}
 
 function update() {
   if (state.up) {
-    trailer.position.addScaledVector(directions.up, speed);
+    trailer.position.addScaledVector(directions.up, trailerSpeed);
   }
   if (state.down) {
-    trailer.position.addScaledVector(directions.down, speed);
+    trailer.position.addScaledVector(directions.down, trailerSpeed);
   }
   if (state.left) {
-    trailer.position.addScaledVector(directions.left, speed);
+    trailer.position.addScaledVector(directions.left, trailerSpeed);
   }
   if (state.right) {
-    trailer.position.addScaledVector(directions.right, speed);
+    trailer.position.addScaledVector(directions.right, trailerSpeed);
   }
 }
 
@@ -369,12 +377,9 @@ function onResize() {
 }
 
 function swapVisualizationMode() {
-  scene.traverse((obj) => {
-    if (obj.isMesh) {
-      obj.material = obj.material.clone();
-      obj.material.wireframe = !obj.material.wireframe;
-    }
-  });
+  for (const material of Object.values(materials)) {
+    material.wireframe = !material.wireframe;
+  }
 }
 
 ///////////////////////
