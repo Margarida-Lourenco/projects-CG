@@ -419,7 +419,7 @@ function update() {
 
     const foot1 = leg1.getObjectByName("foot");
     const foot2 = leg2.getObjectByName("foot");
-    if (foot1 && foot2) { // Check if feet exist
+    if (foot1 && foot2) {
       if (state.feetBackward !== state.feetForward) {
         const rotDirection = state.feetForward ? rotationSpeed : -rotationSpeed;
         if ((foot1.rotation.z + rotDirection >= minFootRotation && foot1.rotation.z + rotDirection <= maxFootRotation)) {
@@ -434,7 +434,8 @@ function update() {
     if (head) {
       if (state.headBackward !== state.headForward) {
         console.log("headBackward", state.headBackward);
-        const rotDirection = state.headForward ? rotationSpeed : -rotationSpeed;
+        // Rotation speed here is inverted, in the sense that "backward" means "towards the back of the truck".
+        const rotDirection = state.headForward ? -rotationSpeed : rotationSpeed;
         if (head.rotation.z + rotDirection > minHeadRotation && head.rotation.z + rotDirection < maxHeadRotation) {
           head.rotation.z += rotDirection;
         }
