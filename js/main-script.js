@@ -9,10 +9,9 @@ import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 //////////////////////
 
 let cameras = [];
-let currentCamera = 0;
+let currentCamera = 3; // Default to perspective camera
 let scene;
 let renderer;
-let trailerSpeed = 2;
 
 let trailer;
 let box, connect_piece;
@@ -55,14 +54,15 @@ const materials = {
 };
 
 const rotationSpeed = Math.PI / 288;
+const trailerSpeed = 2;
+const armTranslationSpeed = 0.08; 
 
 const maxLegRotation = 0; 
 const minLegRotation = -Math.PI / 2;
 
 const maxFootRotation = 0; 
 const minFootRotation = -Math.PI / 2;
-const armTranslationSpeed = 0.5; // Speed for arm translation
-const armTranslationLimit = 10; // Limit for arm translation
+const armTranslationLimit = 10; 
 const maxHeadRotation = Math.PI / 2;
 const minHeadRotation = 0;
 
