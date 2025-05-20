@@ -36,6 +36,9 @@ let state = {
   legsBackward: false,
   feetBackward: false,
   feetForward: false, 
+  armOutward: false, // Added for moving arms outwards
+  armInward: false,  // Added for moving arms inwards
+  armTranslation: 0, // Added for arm translation
 };
 
 ///////////////
@@ -56,6 +59,8 @@ const minLegRotation = -Math.PI / 2;
 
 const maxFootRotation = 0; 
 const minFootRotation = -Math.PI / 2;
+const armTranslationSpeed = 0.5; // Speed for arm translation
+const armTranslationLimit = 10; // Limit for arm translation
 
 /////////////////////
 /* CREATE SCENE(S) */
@@ -197,26 +202,29 @@ function addRobotHead(obj, x, y, z, material) {
     obj.add(face, antenna1, antenna2);
 }
 
-function addRobotArm(obj, x, y, z, material) {
+// Root of arm is middle of upper arm
+function createArm() {
     const arm = new THREE.Object3D();
 
-    const lower = new THREE.Mesh(new THREE.BoxGeometry(10, 25, 10), material);
-    lower.position.set(0, 0, 0);
-    lower.name = "lower";
+    const upper = new THREE.Mesh(new THREE.BoxGeometry(10, 15, 10), materials.red);
+    upper.position.set(0, 0, 0);
 
-    const upper = new THREE.Mesh(new THREE.BoxGeometry(10, 15, 10), material);
-    upper.position.set(0, (upper.geometry.parameters.height + lower.geometry.parameters.height) / 2, 0);
+    const lower = new THREE.Mesh(new THREE.BoxGeometry(25, 10, 10), materials.red);
+    lower.position.set(
+      (lower.geometry.parameters.width - upper.geometry.parameters.width )/ 2,
+      -(lower.geometry.parameters.height + upper.geometry.parameters.height) / 2 ,
+      0
+    );
 
     const antennas = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 10, 32), materials.grey);
     antennas.position.set(
       0, 
-      (upper.geometry.parameters.height) + (lower.geometry.parameters.height + antennas.geometry.parameters.height) / 2, 
+      (upper.geometry.parameters.height +antennas.geometry.parameters.height) / 2, 
       0);
 
     arm.add(upper, lower, antennas);
-    arm.position.set(x, y, z);
-    
-    obj.add(arm);
+
+    return arm; // Return the created arm object
 }
 
 
@@ -311,22 +319,27 @@ function createRobot(x, y, z) {
     
     const leg1 = createLeg();
     leg1.name = "leg1";
-    leg1.position.set(0, 25, 17.5);
+    leg1.position.set(-2.5, 25, 17.5);
 
     const leg2 = createLeg();
     leg2.name = "leg2";
-    leg2.position.set(0, 25, 2.5);
+    leg2.position.set(-2.5, 25, 2.5);
     leg2.scale.z = -1;
 
     addRobotWaist(robot, 0, 5, 10, materials.grey);
     addRobotBody(robot, 0, 5, 10, materials.red);
     addRobotShoulders(robot, 0, 20, 10, materials.red);
     addRobotHead(robot, 0, 40, 10, materials.blue);
-    addRobotArm(robot, -12.5, 27.5, 32.5, materials.red); // braço esquerdo
-    addRobotArm(robot, -12.5, 27.5, -12.5, materials.red); // braço direito
 
+    const leftArm = createArm(); // braço esquerdo
+    leftArm.name = "leftArm";
+    leftArm.position.set(-12.5, 47.5, 32.5);
     
-    robot.add(leg1, leg2);
+    const rightArm = createArm(); // braço direito
+    rightArm.name = "rightArm";
+    rightArm.position.set(-12.5, 47.5, -12.5);
+
+    robot.add(leg1, leg2, leftArm, rightArm);
     scene.add(robot);
 
     robot.position.set(x, y, z);
@@ -360,8 +373,8 @@ function update() {
     trailer.position.addScaledVector(directions.right, trailerSpeed);
   }
 
-  const robot = scene.getObjectByName("robot");
-  if (!robot) {
+  const robotObj = scene.getObjectByName("robot"); // Renamed to avoid conflict with global 'robot'
+  if (!robotObj) {
     return; // No robot, no more updates needed for it
   }
 
@@ -381,17 +394,35 @@ function update() {
     }
   }
 
-  const foot1 = leg1.getObjectByName("foot");
-  const foot2 = leg2.getObjectByName("foot");
-  if (!foot1 || !foot2) {
-    return; 
-  }
+    const foot1 = leg1.getObjectByName("foot");
+    const foot2 = leg2.getObjectByName("foot");
+    if (foot1 && foot2) { // Check if feet exist
+      if (state.feetBackward !== state.feetForward) {
+        const rotDirection = state.feetForward ? rotationSpeed : -rotationSpeed;
+        if ((foot1.rotation.z + rotDirection >= minFootRotation && foot1.rotation.z + rotDirection <= maxFootRotation)) {
+          foot1.rotation.z += rotDirection;
+          foot2.rotation.z += rotDirection;
+        }
+      }
+    }
   
-  if (state.feetBackward !== state.feetForward) {
-    const rotDirection = state.feetForward ? rotationSpeed : -rotationSpeed;
-    if ((foot1.rotation.z + rotDirection >= minFootRotation && foot1.rotation.z + rotDirection <= maxFootRotation)) {
-      foot1.rotation.z += rotDirection;
-      foot2.rotation.z += rotDirection;
+
+  // Arm translation
+  const leftArm = robotObj.getObjectByName("leftArm");
+  const rightArm = robotObj.getObjectByName("rightArm");
+
+  if (leftArm && rightArm && state.armOutward !== state.armInward) {
+    if (state.armOutward && state.armTranslation < armTranslationLimit) {
+      state.armTranslation += armTranslationSpeed;
+      leftArm.position.z -= armTranslationSpeed;
+      rightArm.position.z += armTranslationSpeed;
+      console.log(leftArm.position.z, rightArm.position.z);
+    }
+    if (state.armInward && state.armTranslation > 0) {
+      state.armTranslation -= armTranslationSpeed;
+      leftArm.position.z += armTranslationSpeed;
+      rightArm.position.z -= armTranslationSpeed;
+      console.log(leftArm.position.z, rightArm.position.z);
     }
   }
 }
@@ -499,9 +530,11 @@ function onKeyDown(e) {
       break;
     case 68: //D
     case 100: //d
+      state.armOutward = true;
+      break;
     case 69: //E
     case 101: //e
-      // Alter delta1 angle
+      state.armInward = true;
       break;
     case 70: //F
     case 102: //f
@@ -557,6 +590,14 @@ function onKeyUp(e) {
     case 87: //W
     case 119: //w
       state.legsForward = false;
+      break;
+    case 68: //D
+    case 100: //d
+      state.armOutward = false;
+      break;
+    case 69: //E
+    case 101: //e
+      state.armInward = false;
       break;
   }
 }
