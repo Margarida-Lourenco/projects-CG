@@ -167,7 +167,7 @@ function addRobotWaist(obj, x, y, z, material) {
 }
 
 function addWheel(){
-    const geometry = new THREE.CylinderGeometry(4.5, 4.5, 5, 16); // radiusTop, radiusBottom, height, radialSegments
+    const geometry = new THREE.CylinderGeometry(6, 6, 5, 16); // radiusTop, radiusBottom, height, radialSegments
     const mesh = new THREE.Mesh(geometry, materials.black);
     mesh.rotation.x = Math.PI / 2;
     return mesh;
@@ -222,33 +222,40 @@ function addRobotArm(obj, x, y, z, material) {
 
 function createLeg() {
   const leg = new THREE.Object3D(); 
+  const Yoffset = -10; // Offset to position the leg pivot corectly 
 
   const thigh = new THREE.Mesh(
     new THREE.BoxGeometry(7.5, 10, 7.5), materials.grey);
-  thigh.position.y = -10;
 
   const calf = new THREE.Mesh(
-    new THREE.BoxGeometry(10, 25, 10), materials.blue);
-  calf.position.y = -15 - (25 / 2);
+    new THREE.BoxGeometry(10, 35, 10), materials.blue);
+  calf.position.y =  -(calf.geometry.parameters.height / 2) - thigh.geometry.parameters.height / 2;
 
 
   const footGeometry = new THREE.BoxGeometry(15, 5, 15); // width, height, depth
   // Translate the geometry so its local origin is rearwards, aligned with the first 4th of the leg.
+  // This is so the pivot point is towards the back of the foot.
   footGeometry.translate(5, 0, 0);
 
   const foot = new THREE.Mesh(footGeometry, materials.blue);
   foot.name = "foot";
+  foot.position.set( - (calf.geometry.parameters.width / 4), 
+    -(calf.geometry.parameters.height) - (thigh.geometry.parameters.height) + (foot.geometry.parameters.height / 2), 
+      (calf.geometry.parameters.width / 4));
 
-  foot.position.set(-2.5, -40 -2.5, 2.5);
-
-
+  
   const wheel1 = addWheel();
   const wheel2 = addWheel();
 
-  wheel1.position.set(0, -26.25 + 2.5, 7.5);
-  wheel2.position.set(0, -26.25 - 7.25, 7.5);
+  wheel1.position.set(calf.geometry.parameters.depth / 4, calf.position.y - 8, (calf.geometry.parameters.width + wheel1.geometry.parameters.height) / 2);
+  wheel2.position.set(2.5, calf.position.y + 8, (calf.geometry.parameters.width + wheel1.geometry.parameters.height) / 2);
 
   leg.add(thigh, calf, foot, wheel1, wheel2);
+
+  // To apply the offset necessary to pivot arround the top of the thigh
+  for (let i = 0; i < leg.children.length; i++) {
+    leg.children[i].position.y += Yoffset;
+  }
 
   return leg;
 }
