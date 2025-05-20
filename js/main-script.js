@@ -157,11 +157,11 @@ function addRobotWaist(obj, x, y, z, material) {
     mesh2.position.set(x-2.5, y+20, z);
 
     obj.add(mesh2);
-
+2
     const wheel1 = addWheel();
     const wheel2 = addWheel();
-    wheel1.position.set(0, 25, 25);
-    wheel2.position.set(0, 25, -5);
+    wheel1.position.set(-5, 25 - mesh2.geometry.parameters.height / 4, mesh2.geometry.parameters.depth);
+    wheel2.position.set(-5, 25 - mesh2.geometry.parameters.height / 4, -wheel2.geometry.parameters.height);
     obj.add(wheel1, wheel2);
 }
 
@@ -203,14 +203,18 @@ function addRobotHead(obj, x, y, z, material) {
 function addRobotArm(obj, x, y, z, material) {
     const arm = new THREE.Object3D();
 
-    const upper = new THREE.Mesh(new THREE.BoxGeometry(10, 15, 10), material);
-    upper.position.set(0, 20, 0);
-
-    const antennas = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 10, 32), materials.grey);
-    antennas.position.set(0, 32.5, 0);
-
     const lower = new THREE.Mesh(new THREE.BoxGeometry(10, 25, 10), material);
     lower.position.set(0, 0, 0);
+    lower.name = "lower";
+
+    const upper = new THREE.Mesh(new THREE.BoxGeometry(10, 15, 10), material);
+    upper.position.set(0, (upper.geometry.parameters.height + lower.geometry.parameters.height) / 2, 0);
+
+    const antennas = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 10, 32), materials.grey);
+    antennas.position.set(
+      0, 
+      (upper.geometry.parameters.height) + (lower.geometry.parameters.height + antennas.geometry.parameters.height) / 2, 
+      0);
 
     arm.add(upper, lower, antennas);
     arm.position.set(x, y, z);
@@ -222,6 +226,8 @@ function addRobotArm(obj, x, y, z, material) {
 function createLeg() {
   const leg = new THREE.Object3D(); 
   const Yoffset = -10; // Offset to position the leg pivot corectly 
+  const wheelGroupOffset = -2; // Vertical offset of the wheel group
+  const wheelGap = 2.5; // Gap between the surface of the wheels
 
   const thigh = new THREE.Mesh(
     new THREE.BoxGeometry(7.5, 10, 7.5), materials.grey);
@@ -247,8 +253,15 @@ function createLeg() {
   const wheel2 = addWheel();
 
 
-  wheel1.position.set(calf.geometry.parameters.depth / 4, calf.position.y - 8, (calf.geometry.parameters.width + wheel1.geometry.parameters.height) / 2);
-  wheel2.position.set(2.5, calf.position.y + 8, (calf.geometry.parameters.width + wheel1.geometry.parameters.height) / 2);
+  wheel1.position.set(
+    calf.geometry.parameters.depth / 4, 
+    calf.position.y + wheelGroupOffset - ((wheelGap / 2) + wheel2.geometry.parameters.radiusTop), 
+    (calf.geometry.parameters.width + wheel1.geometry.parameters.height) / 2
+  );
+  wheel2.position.set(
+    calf.geometry.parameters.depth / 4, 
+    calf.position.y + wheelGroupOffset + ((wheelGap / 2) + wheel2.geometry.parameters.radiusTop), 
+    (calf.geometry.parameters.width + wheel1.geometry.parameters.height) / 2);
 
   leg.add(thigh, calf, foot, wheel1, wheel2);
 
