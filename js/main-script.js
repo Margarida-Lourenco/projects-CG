@@ -7,8 +7,12 @@ import { createFloralFieldTexture, createStarrySkyTexture } from './procedural-t
 
 let scene, camera, renderer, controls;
 let terrainMesh, moonMesh, directionalLight;
+let ufo; // ufo will store the UFO group
+const UFO_ROTATION_SPEED = 0.02; // radians per frame
+const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibility)
+let keyStates = {}; // To store the state of pressed keys
 
-const debugFlag = false; // Set to true to enable scene helpers
+const debugFlag = true; // Set to true to enable scene helpers
 
 const TERRAIN_WIDTH = 1000; 
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
@@ -52,6 +56,11 @@ function init() {
     // Event Listeners
     window.addEventListener('resize', onWindowResize, false);
     window.addEventListener('keydown', onKeyDown, false); // Added keydown listener for light toggle
+    window.addEventListener('keyup', onKeyUp, false); // Added keyup listener for movement
+
+    ufo = createUFO(); // Assign created UFO to global variable
+    ufo.position.set(0, 80, 0); // Position UFO above the terrain
+    scene.add(ufo);
 
     animate();
 }
@@ -129,7 +138,7 @@ function createSkydome() {
 }
 
 function createMoon() {
-    const moonRadius = TERRAIN_WIDTH * 0.02; // Moon size relative to terrain
+    const moonRadius = TERRAIN_WIDTH * 0.025; // Moon size relative to terrain
     const moonGeometry = new THREE.SphereGeometry(moonRadius, 32, 32);
     const moonMaterial = new THREE.MeshStandardMaterial({
         color: 0xffffff,
@@ -148,9 +157,9 @@ function createMoon() {
     const scaleToSkydome = SKYDOME_SCALE / currentDirMagnitude;
 
     moonMesh.position.set(
-        TERRAIN_WIDTH * currentDirX * scaleToSkydome,
-        TERRAIN_WIDTH * currentDirY * scaleToSkydome,
-        TERRAIN_WIDTH * currentDirZ * scaleToSkydome
+        TERRAIN_WIDTH * currentDirX * scaleToSkydome - moonRadius / 2,
+        TERRAIN_WIDTH * currentDirY * scaleToSkydome - moonRadius / 2,
+        TERRAIN_WIDTH * currentDirZ * scaleToSkydome + moonRadius,
     );
     scene.add(moonMesh);
     console.log("Moon created and positioned on skydome surface.");
@@ -177,6 +186,50 @@ function createDirectionalLight() {
     console.log("Directional light created.");
 }
 
+function createUFO() {
+    const ufoGroup = new THREE.Group();
+    const bodyRadius = 30;
+    const cockpitRadius = bodyRadius / 3; 
+    const cockpitFlattening = 0.75; 
+    const bodyFlattening = 0.25;
+
+    const numLights = 8; // Number of small spheres (lights)
+    const lightRadius = bodyRadius * 0.4; // Radius at which lights are placed, slightly inside the body
+    const smallSphereRadius = bodyRadius * 0.05; // Size of the small spheres
+
+    // Reverted transparency, kept emissive for lightMaterial
+    const ufoCockpitMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 0.2});
+    const lightMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.8 });
+    const ufoBodyMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
+
+    const ufoCockpitGeometry = new THREE.SphereGeometry(cockpitRadius, 32, 16, 0, Math.PI * 2 , 0, Math.PI / 2);
+    const ufoCockpitMesh = new THREE.Mesh(ufoCockpitGeometry, ufoCockpitMaterial);
+    ufoCockpitMesh.scale.set(1, cockpitFlattening, 1);
+    ufoCockpitMesh.position.y = (bodyRadius * bodyFlattening) * 0.5; // .5 is arbitrary to avoid small gap between cockpit and body
+
+    const ufoBodyGeometry = new THREE.SphereGeometry(bodyRadius, 32, 16);;
+    const ufoBodyMesh = new THREE.Mesh(ufoBodyGeometry, ufoBodyMaterial);
+    ufoBodyMesh.scale.set(1, bodyFlattening, 1); 
+
+    ufoGroup.add(ufoCockpitMesh, ufoBodyMesh)
+
+    for (let i = 0; i < numLights; i++) {
+        const angle = (i / numLights) * Math.PI * 2; // Angle for each sphere
+
+        const lightGeometry = new THREE.SphereGeometry(smallSphereRadius, 8, 8);
+        const lightMesh = new THREE.Mesh(lightGeometry, lightMaterial);
+
+        lightMesh.position.x = Math.cos(angle) * lightRadius;
+        lightMesh.position.z = Math.sin(angle) * lightRadius;
+        lightMesh.position.y = - Math.sqrt(bodyRadius * bodyRadius - lightRadius * lightRadius) * bodyFlattening; //Pin lights to surface of UFO body 
+
+        ufoGroup.add(lightMesh);
+    }
+
+    return ufoGroup;
+
+}
+
 function onKeyDown(event) {
     if (event.key === 'd' || event.key === 'D') {
         if (directionalLight) {
@@ -184,6 +237,41 @@ function onKeyDown(event) {
             console.log(`Directional light toggled: ${directionalLight.visible ? 'ON' : 'OFF'}`);
         }
     }
+    // Store key state for movement
+    keyStates[event.key.toLowerCase()] = true;
+}
+
+function onKeyUp(event) {
+    // Clear key state for movement
+    keyStates[event.key.toLowerCase()] = false;
+}
+
+function updateUFOMovement() {
+    if (!ufo) return;
+
+    // Rotation
+    ufo.rotation.y += UFO_ROTATION_SPEED;
+
+    // Horizontal movement
+    let moveDirection = new THREE.Vector3();
+    if (keyStates['arrowleft']) {
+        moveDirection.x -= 1;
+    }
+    if (keyStates['arrowright']) {
+        moveDirection.x += 1;
+    }
+    if (keyStates['arrowup']) {
+        moveDirection.z -= 1;
+    }
+    if (keyStates['arrowdown']) {
+        moveDirection.z += 1;
+    }
+
+    if (moveDirection.lengthSq() > 0) { // Check if there is any movement input
+        moveDirection.normalize().multiplyScalar(UFO_MOVEMENT_SPEED);
+        ufo.position.add(moveDirection);
+    }
+
 }
 
 function onWindowResize() {
@@ -194,6 +282,7 @@ function onWindowResize() {
 
 function animate() {
     requestAnimationFrame(animate);
+    updateUFOMovement(); // Update UFO movement each frame
     controls.update();
     renderer.render(scene, camera);
 }
