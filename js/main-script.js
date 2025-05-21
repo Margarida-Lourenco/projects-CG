@@ -14,8 +14,8 @@ let scene;
 let renderer;
 
 let robot;
-
 let leftLeg, rightLeg, head, leftArm, rightArm;
+
 let trailer;
 
 let directions = {
@@ -167,8 +167,8 @@ function addRobotWaist(obj, x, y, z, material) {
 
     obj.add(base);
 
-    const wheel1 = addWheel();
-    const wheel2 = addWheel();
+    const wheel1 = createWheel();
+    const wheel2 = createWheel();
     wheel1.position.set(
       -5, 
       25 - base.geometry.parameters.height / 4, 
@@ -182,7 +182,7 @@ function addRobotWaist(obj, x, y, z, material) {
     obj.add(wheel1, wheel2);
 }
 
-function addWheel(){
+function createWheel(){
     const geometry = new THREE.CylinderGeometry(6, 6, 5, 16); // radiusTop, radiusBottom, height, radialSegments
     const wheel = new THREE.Mesh(geometry, materials.black);
     wheel.rotation.x = Math.PI / 2;
@@ -299,8 +299,8 @@ function createLeg() {
       (calf.geometry.parameters.width / 4));
 
   
-  const wheel1 = addWheel();
-  const wheel2 = addWheel();
+  const wheel1 = createWheel();
+  const wheel2 = createWheel();
 
 
   wheel1.position.set(
@@ -341,10 +341,10 @@ function createTrailer(x, y, z){
   const wheelGap = 2.5; // Gap between the surface of the wheels
   const wheelGroupOffset = 8; // Vertical offset of the wheel group to the end of the trailer
   
-  let twheelRR = addWheel(); // Right rear
-  let twheelLR = addWheel(); // Left rear
-  let twheelFR = addWheel(); // Right front
-  let twheelFL = addWheel(); // Left front
+  let twheelRR = createWheel(); // Right rear
+  let twheelLR = createWheel(); // Left rear
+  let twheelFR = createWheel(); // Right front
+  let twheelFL = createWheel(); // Left front
   
   twheelRR.position.set(
     -box.geometry.parameters.width / 2 + twheelRR.geometry.parameters.radiusTop + wheelGroupOffset,
@@ -451,6 +451,8 @@ function handleCollisions() {
   LegRotation(leftLeg, rightLeg);
   footRotation(foot1, foot2);
   headRetraction(head);
+  
+  state.armOutward = true;
   armTranslation(leftArm, rightArm);
 
 }
@@ -489,18 +491,17 @@ function headRetraction(head) {
 }
 
 function armTranslation(leftArm, rightArm) {
-    if (state.armOutward && state.armTranslation < armTranslationLimit) {
-      state.armTranslation += armTranslationSpeed;
-      leftArm.position.z -= armTranslationSpeed;
-      rightArm.position.z += armTranslationSpeed;
-    }
-    if (state.armInward && state.armTranslation > 0) {
-      state.armTranslation -= armTranslationSpeed;
-      leftArm.position.z += armTranslationSpeed;
-      rightArm.position.z -= armTranslationSpeed;
-    }
-}
+  const moveOut = state.armOutward && state.armTranslation < armTranslationLimit;
+  const moveIn = state.armInward && state.armTranslation > 0;
 
+  const direction = moveOut ? 1 : (moveIn ? -1 : 0);
+
+  if (direction) {
+    state.armTranslation += direction * armTranslationSpeed;
+    leftArm.position.z -= direction * armTranslationSpeed;
+    rightArm.position.z += direction * armTranslationSpeed;
+  }
+}
 
 function update() {
   updateBoundingBoxes();
