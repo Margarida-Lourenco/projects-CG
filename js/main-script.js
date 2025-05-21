@@ -386,9 +386,7 @@ function createTrailer(x, y, z){
   trailer.position.set(x, y, z);
   
   trailerBox = new THREE.Box3().setFromObject(trailer);
-    /* new THREE.Vector3(-trailer.geometry.parameters.width / 2, -trailer.geometry.parameters.height / 2, -trailer.geometry.parameters.depth / 2),
-    new THREE.Vector3(trailer.geometry.parameters.width / 2, trailer.geometry.parameters.height / 2, trailer.geometry.parameters.depth / 2)
-  )  */
+  
   const boxHelper = new THREE.Box3Helper(trailerBox, 0xffff00);
   scene.add(boxHelper);
   scene.add(trailer);
