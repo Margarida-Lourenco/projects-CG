@@ -13,17 +13,14 @@ let currentCamera = 3; // Default to perspective camera
 let scene;
 let renderer;
 
-let trailer;
-let box, connect_piece;
-let twheel1, twheel2, twheel3, twheel4;
-
 let robot;
+let trailer;
 
 let directions = {
   up: new THREE.Vector3(0, 1, 0),
   down: new THREE.Vector3(0, -1, 0),
-  left: new THREE.Vector3(0, 0, 1),
-  right: new THREE.Vector3(0, 0, -1),
+  left: new THREE.Vector3(-1, 0, 0),
+  right: new THREE.Vector3(1, 0, 0),
 };
 
 let state = {
@@ -54,7 +51,7 @@ const materials = {
 };
 
 const rotationSpeed = Math.PI / 288;
-const trailerSpeed = 2;
+const trailerSpeed = 0.5;
 const armTranslationSpeed = 0.08; 
 
 const maxLegRotation = 0; 
@@ -73,8 +70,8 @@ function createScene() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xfffff0);
 
-  createRobot(0, 0, -80);
-  createTrailer(-40, 0, 10);
+  createRobot(20, 0, 0);
+  createTrailer(-70, 46, 0);
 }
 
 //////////////////////
