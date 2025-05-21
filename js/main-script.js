@@ -39,6 +39,7 @@ let state = {
   armTranslation: 0, 
   headBackward: false,
   headForward: false,
+  isColliding: false,
 };
 
 ///////////////
@@ -65,6 +66,7 @@ const minFootRotation = -Math.PI / 2;
 const armTranslationLimit = 10; 
 const maxHeadRotation = Math.PI / 2;
 const minHeadRotation = 0;
+const colisionPosition = (10, 0, 0);
 
 let robotBox;
 let trailerBox;
@@ -455,6 +457,16 @@ function handleCollisions() {
   state.armOutward = true;
   armTranslation(leftArm, rightArm);
 
+  if (trailer.position.x < colisionPosition.x) {
+    trailer.position.x += trailerSpeed;
+  }
+  if (trailer.position.y < colisionPosition.y) {
+    trailer.position.y += trailerSpeed;
+  }
+  if (trailer.position.z < colisionPosition.z) {
+    trailer.position.z += trailerSpeed;
+  }
+
 }
 
 ////////////
@@ -506,17 +518,24 @@ function armTranslation(leftArm, rightArm) {
 function update() {
   updateBoundingBoxes();
 
-  if (state.up) {
-    trailer.position.addScaledVector(directions.up, trailerSpeed);
-  }
-  if (state.down) {
-    trailer.position.addScaledVector(directions.down, trailerSpeed);
-  }
-  if (state.left) {
-    trailer.position.addScaledVector(directions.left, trailerSpeed);
-  }
-  if (state.right) {
-    trailer.position.addScaledVector(directions.right, trailerSpeed);
+  if (state.isColliding) {
+    if (state.left) {
+      trailer.position.addScaledVector(directions.left, trailerSpeed);
+      trailer.position.x -= 1 * trailerSpeed;
+    }
+  } else {
+    if (state.up) {
+      trailer.position.addScaledVector(directions.up, trailerSpeed);
+    }
+    if (state.down) {
+      trailer.position.addScaledVector(directions.down, trailerSpeed);
+    }
+    if (state.left) {
+      trailer.position.addScaledVector(directions.left, trailerSpeed);
+    }
+    if (state.right) {
+      trailer.position.addScaledVector(directions.right, trailerSpeed);
+    }
   }
 
   if (!robot) {
@@ -587,7 +606,10 @@ function animate() {
   update();
   
   if (checkCollisions()) {
+    state.isColliding = true;
     handleCollisions();
+  } else {
+    state.isColliding = false;
   }
 
   render();
