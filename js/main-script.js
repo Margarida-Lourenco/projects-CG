@@ -324,7 +324,8 @@ function createTrailer(x, y, z){
 
   let box = new THREE.Mesh(new THREE.BoxGeometry(95, 35, 35), materials.grey);
   let connectPiece = new THREE.Mesh(new THREE.BoxGeometry(15, 5, 15), materials.grey);
-  let wheelSupport = new THREE.Mesh(new THREE.BoxGeometry(26.5, 10, 5), materials.blue);
+  let wheelSupportL = new THREE.Mesh(new THREE.BoxGeometry(26.5, 10, 5), materials.blue);
+  let wheelSupportR = new THREE.Mesh(new THREE.BoxGeometry(26.5, 10, 5), materials.blue);
 
   box.position.set(0, 0, 0);
   connectPiece.position.set(
@@ -342,35 +343,41 @@ function createTrailer(x, y, z){
   
   twheelRR.position.set(
     -box.geometry.parameters.width / 2 + twheelRR.geometry.parameters.radiusTop + wheelGroupOffset,
-    - (box.geometry.parameters.height / 2) - (wheelSupport.geometry.parameters.height) + wheelGap,
+    - (box.geometry.parameters.height / 2) - (wheelSupportR.geometry.parameters.height) + wheelGap,
     (box.geometry.parameters.depth - twheelRR.geometry.parameters.height) / 2
   );
 
   twheelLR.position.set(
     -box.geometry.parameters.width / 2 + twheelLR.geometry.parameters.radiusTop + wheelGroupOffset,
-    - (box.geometry.parameters.height / 2) - (wheelSupport.geometry.parameters.height) + wheelGap,
+    - (box.geometry.parameters.height / 2) - (wheelSupportL.geometry.parameters.height) + wheelGap,
     - (box.geometry.parameters.depth - twheelLR.geometry.parameters.height) / 2
   );
 
   twheelFR.position.set(
     -box.geometry.parameters.width / 2 + twheelFR.geometry.parameters.radiusTop + wheelGroupOffset + 2*twheelFR.geometry.parameters.radiusTop + wheelGap,
-    - (box.geometry.parameters.height / 2) - (wheelSupport.geometry.parameters.height) + wheelGap,
+    - (box.geometry.parameters.height / 2) - (wheelSupportR.geometry.parameters.height) + wheelGap,
     (box.geometry.parameters.depth - twheelFR.geometry.parameters.height) / 2
   );
 
   twheelFL.position.set(
     -box.geometry.parameters.width / 2 + twheelFL.geometry.parameters.radiusTop + wheelGroupOffset + 2*twheelFL.geometry.parameters.radiusTop + wheelGap,
-    - (box.geometry.parameters.height / 2) - (wheelSupport.geometry.parameters.height) + wheelGap,
+    - (box.geometry.parameters.height / 2) - (wheelSupportL.geometry.parameters.height) + wheelGap,
     - (box.geometry.parameters.depth - twheelFL.geometry.parameters.height) / 2
   );
 
-  wheelSupport.position.set(
-    -box.geometry.parameters.width / 2 + wheelSupport.geometry.parameters.width / 2 + wheelGroupOffset,
-    - (box.geometry.parameters.height / 2 + wheelSupport.geometry.parameters.height / 2),
-    (box.geometry.parameters.depth - wheelSupport.geometry.parameters.height) / 2
+  wheelSupportL.position.set(
+    -box.geometry.parameters.width / 2 + wheelSupportL.geometry.parameters.width / 2 + wheelGroupOffset,
+    - (box.geometry.parameters.height / 2 + wheelSupportL.geometry.parameters.height / 2),
+    (box.geometry.parameters.depth - wheelSupportL.geometry.parameters.height) / 2
   );
 
-  trailer.add(box, twheelRR, twheelLR, twheelFL, twheelFR, connectPiece, wheelSupport);
+  wheelSupportR.position.set(
+    -box.geometry.parameters.width / 2 + wheelSupportR.geometry.parameters.width / 2 + wheelGroupOffset,
+    - (box.geometry.parameters.height / 2 + wheelSupportR.geometry.parameters.height / 2),
+    - (box.geometry.parameters.depth - wheelSupportR.geometry.parameters.height) / 2
+  );
+
+  trailer.add(box, twheelRR, twheelLR, twheelFL, twheelFR, connectPiece, wheelSupportL, wheelSupportR);
 
   trailer.position.set(x, y, z);
   
