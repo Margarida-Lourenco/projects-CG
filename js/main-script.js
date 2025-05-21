@@ -47,7 +47,8 @@ const materials = {
   black: new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true }),
   blue: new THREE.MeshBasicMaterial({ color: 0x0000ff, wireframe: true }),
   red: new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true }),
-  grey: new THREE.MeshBasicMaterial({ color: 0x9e948b, wireframe: true })
+  grey: new THREE.MeshBasicMaterial({ color: 0x9e948b, wireframe: true }),
+  yellow: new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true }),
 };
 
 const rotationSpeed = Math.PI / 288;
@@ -129,7 +130,7 @@ function createCamera() {
     0.1,
     1000
   );
-  orthoCamera3.position.set(0, 60, 0);
+  orthoCamera3.position.set(0, 80, 0);
   orthoCamera3.userData.frustumSize = frustumSize;
   orthoCamera3.lookAt(0, 0, 0);
 
@@ -216,7 +217,21 @@ function createHead() {
         -4.5
       );
 
-      head.add(face, antennaL, antennaR);
+      const eyeR = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2.5), materials.yellow);
+      eyeR.position.set(
+        4,
+        (face.geometry.parameters.height / 2) - eyeR.geometry.parameters.height,
+        -2
+      );
+
+      const eyeL = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2.5), materials.yellow);
+      eyeL.position.set(
+        4,
+        (face.geometry.parameters.height / 2) - eyeL.geometry.parameters.height,
+        2
+      );
+
+      head.add(face, antennaL, antennaR, eyeL, eyeR);
 
       // Shift the entire assembly upwards along local Y.
       // This effectively lowers the pivot for rotation to the bottom of the face.
