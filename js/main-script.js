@@ -15,7 +15,7 @@ let renderer;
 
 let robot;
 
-let leg1, leg2;
+let leftLeg, rightLeg, head, leftArm, rightArm;
 let trailer;
 
 let directions = {
@@ -397,32 +397,28 @@ function createTrailer(x, y, z){
 function createRobot(x, y, z) {
     robot = new THREE.Object3D();
     robot.add(new THREE.AxesHelper(10));
-    robot.name = "robot";
     
-    leg1 = createLeg();
-    leg1.position.set(-2.5, 25, 7.5);
+    leftLeg = createLeg();
+    leftLeg.position.set(-2.5, 25, 7.5);
 
-    leg2 = createLeg();
-    leg2.position.set(-2.5, 25, -7.5);
-    leg2.scale.z = -1;
+    rightLeg = createLeg();
+    rightLeg.position.set(-2.5, 25, -7.5);
+    rightLeg.scale.z = -1;
 
     addRobotWaist(robot, 0, 25, 0, materials.grey);
     addRobotBody(robot, 0, 35, 0, materials.red);
     addRobotShoulders(robot, 0, 47.5, 0, materials.red);
 
-    const head = createHead();
-    head.name = "head";
+    head = createHead();
     head.position.set(0, 50, 0);
 
-    const leftArm = createArm(); // braço esquerdo
-    leftArm.name = "leftArm";
+    leftArm = createArm();
     leftArm.position.set(-12.5, 47.5, 22.5);
     
-    const rightArm = createArm(); // braço direito
-    rightArm.name = "rightArm";
+    rightArm = createArm();
     rightArm.position.set(-12.5, 47.5, -22.5);
 
-    robot.add(head, leg1, leg2, leftArm, rightArm);
+    robot.add(head, leftLeg, rightLeg, leftArm, rightArm);
     scene.add(robot);
 
     robot.position.set(x, y, z);
@@ -449,19 +445,14 @@ function checkCollisions() {
 /* HANDLE COLLISIONS */
 ///////////////////////
 function handleCollisions() {
-  const foot1 = leg1.getObjectByName("foot");
-  const foot2 = leg2.getObjectByName("foot");
-  const head = robot.getObjectByName("head");
-  const leftArm = robot.getObjectByName("leftArm");
-  const rightArm = robot.getObjectByName("rightArm");
+  const foot1 = leftLeg.getObjectByName("foot");
+  const foot2 = rightLeg.getObjectByName("foot");
 
-  LegRotation(leg1, leg2);
+  LegRotation(leftLeg, rightLeg);
   footRotation(foot1, foot2);
   headRetraction(head);
   armTranslation(leftArm, rightArm);
-  
 
-  
 }
 
 ////////////
@@ -480,9 +471,9 @@ function apply2ElementRotation(element1, element2, rotDirection, minRot, maxRot)
   }
 }
 
-function LegRotation(leg1, leg2) {
+function LegRotation(leftLeg, rightLeg) {
   const rotDirection = state.legsForward ? rotationSpeed : -rotationSpeed;
-  apply2ElementRotation(leg1, leg2, rotDirection, minLegRotation, maxLegRotation);
+  apply2ElementRotation(leftLeg, rightLeg, rotDirection, minLegRotation, maxLegRotation);
 }
 
 function footRotation(foot1, foot2) {
@@ -531,17 +522,17 @@ function update() {
     return; // No robot, no more updates needed for it
   }
 
-  if (!leg1 || !leg2) {
+  if (!leftLeg || !rightLeg) {
     return;
   }
 
   if (state.legsForward !== state.legsBackward) {
-    LegRotation(leg1, leg2);
+    LegRotation(leftLeg, rightLeg);
   }
 
   // Foot rotation
-  const foot1 = leg1.getObjectByName("foot");
-  const foot2 = leg2.getObjectByName("foot");
+  const foot1 = leftLeg.getObjectByName("foot");
+  const foot2 = rightLeg.getObjectByName("foot");
   if (foot1 && foot2) {
     if (state.feetBackward !== state.feetForward) {
     footRotation(foot1, foot2);
@@ -549,7 +540,6 @@ function update() {
   }
 
   // Head retraction
-  const head = robot.getObjectByName("head");
   if (head) {
     if (state.headBackward !== state.headForward) {
       headRetraction(head);
@@ -557,9 +547,6 @@ function update() {
   }
 
   // Arm translation
-  const leftArm = robot.getObjectByName("leftArm");
-  const rightArm = robot.getObjectByName("rightArm");
-
   if (leftArm && rightArm) {
     if (state.armOutward !== state.armInward) {
     armTranslation(leftArm, rightArm);
