@@ -219,16 +219,16 @@ function createHead() {
 
       const eyeR = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2.5), materials.yellow);
       eyeR.position.set(
-        4,
-        (face.geometry.parameters.height / 2) - eyeR.geometry.parameters.height,
-        -2
+        face.geometry.parameters.radiusTop - eyeR.geometry.parameters.width / 2, // Face of eye intersects with tangent of face
+        (face.geometry.parameters.height / 6), // 2/3rds of face height
+        -eyeR.geometry.parameters.depth //Eyes have an eye width between them
       );
 
       const eyeL = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2.5), materials.yellow);
       eyeL.position.set(
-        4,
-        (face.geometry.parameters.height / 2) - eyeL.geometry.parameters.height,
-        2
+        face.geometry.parameters.radiusTop - eyeL.geometry.parameters.width / 2,
+        (face.geometry.parameters.height / 6),
+        eyeR.geometry.parameters.depth
       );
 
       head.add(face, antennaL, antennaR, eyeL, eyeR);
