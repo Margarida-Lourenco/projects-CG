@@ -476,8 +476,8 @@ function updateBoundingBoxes() {
   trailerBox.setFromObject(trailer);
 }
 
-function apply2ElementRotation(element1, element2, rotDirection) {
-  if (element1.rotation.z + rotDirection > minLegRotation && element1.rotation.z + rotDirection < maxLegRotation) {
+function apply2ElementRotation(element1, element2, rotDirection, minRot, maxRot) {
+  if (element1.rotation.z + rotDirection > minRot && element1.rotation.z + rotDirection < maxRot) {
     element1.rotation.z += rotDirection;
     element2.rotation.z += rotDirection;
   }
@@ -485,12 +485,12 @@ function apply2ElementRotation(element1, element2, rotDirection) {
 
 function LegRotation(leg1, leg2) {
   const rotDirection = state.legsForward ? rotationSpeed : -rotationSpeed;
-  apply2ElementRotation(leg1, leg2, rotDirection);
+  apply2ElementRotation(leg1, leg2, rotDirection, minLegRotation, maxLegRotation);
 }
 
 function footRotation(foot1, foot2) {
   const rotDirection = state.feetForward ? rotationSpeed : -rotationSpeed;
-  apply2ElementRotation(foot1, foot2, rotDirection);
+  apply2ElementRotation(foot1, foot2, rotDirection, minFootRotation, maxFootRotation);
 }
 
 function headRetraction(head) {
