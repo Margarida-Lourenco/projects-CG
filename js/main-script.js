@@ -32,9 +32,9 @@ let state = {
   legsBackward: false,
   feetBackward: false,
   feetForward: false, 
-  armOutward: false, // Added for moving arms outwards
-  armInward: false,  // Added for moving arms inwards
-  armTranslation: 0, // Added for arm translation
+  armOutward: false, 
+  armInward: false,  
+  armTranslation: 0, 
   headBackward: false,
   headForward: false,
 };
@@ -72,7 +72,7 @@ function createScene() {
   scene.background = new THREE.Color(0xfffff0);
 
   createRobot(20, 0, 0);
-  createTrailer(-70, 46, 0);
+  createTrailer(-70, 47.5, 0);
 }
 
 //////////////////////
@@ -152,50 +152,50 @@ function switchToCamera(cam) {
 
 function addRobotWaist(obj, x, y, z, material) {
     const geometry = new THREE.BoxGeometry(5, 10, 35);
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(x+5, y, z);
-    obj.add(mesh);
+    const bumper = new THREE.Mesh(geometry, material);
+    bumper.position.set(x+5, y, z);
+    obj.add(bumper);
 
     const geometry2 = new THREE.BoxGeometry(10, 10, 25);
-    const mesh2 = new THREE.Mesh(geometry2, material);
-    mesh2.position.set(x-2.5, y, z);
+    const base = new THREE.Mesh(geometry2, material);
+    base.position.set(x-2.5, y, z);
 
-    obj.add(mesh2);
-2
+    obj.add(base);
+
     const wheel1 = addWheel();
     const wheel2 = addWheel();
     wheel1.position.set(
       -5, 
-      25 - mesh2.geometry.parameters.height / 4, 
-      (wheel1.geometry.parameters.height + mesh2.geometry.parameters.depth) / 2);
+      25 - base.geometry.parameters.height / 4, 
+      (wheel1.geometry.parameters.height + base.geometry.parameters.depth) / 2);
 
     wheel2.position.set(
       -5, 
-      25 - mesh2.geometry.parameters.height / 4,
-      - (wheel2.geometry.parameters.height + mesh2.geometry.parameters.depth) / 2);
+      25 - base.geometry.parameters.height / 4,
+      - (wheel2.geometry.parameters.height + base.geometry.parameters.depth) / 2);
     
     obj.add(wheel1, wheel2);
 }
 
 function addWheel(){
     const geometry = new THREE.CylinderGeometry(6, 6, 5, 16); // radiusTop, radiusBottom, height, radialSegments
-    const mesh = new THREE.Mesh(geometry, materials.black);
-    mesh.rotation.x = Math.PI / 2;
-    return mesh;
+    const wheel = new THREE.Mesh(geometry, materials.black);
+    wheel.rotation.x = Math.PI / 2;
+    return wheel;
 }
 
 function addRobotBody(obj, x, y, z, material) {
     const geometry = new THREE.BoxGeometry(15, 10, 15);
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(x, y, z);
-    obj.add(mesh);
+    const body = new THREE.Mesh(geometry, material);
+    body.position.set(x, y, z);
+    obj.add(body);
 }
 
 function addRobotShoulders(obj, x, y, z, material) {
     const geometry = new THREE.BoxGeometry(15, 15, 35);
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(x, y, z);
-    obj.add(mesh);
+    const shoulders = new THREE.Mesh(geometry, material);
+    shoulders.position.set(x, y, z);
+    obj.add(shoulders);
 }
 
 function createHead() {
@@ -264,7 +264,7 @@ function createArm() {
 
     arm.add(upper, lower, exhausts);
 
-    return arm; // Return the created arm object
+    return arm;
 }
 
 
@@ -324,6 +324,7 @@ function createTrailer(x, y, z){
 
   let box = new THREE.Mesh(new THREE.BoxGeometry(95, 35, 35), materials.grey);
   let connectPiece = new THREE.Mesh(new THREE.BoxGeometry(15, 5, 15), materials.grey);
+  let wheelSupport = new THREE.Mesh(new THREE.BoxGeometry(26.5, 10, 5), materials.blue);
 
   box.position.set(0, 0, 0);
   connectPiece.position.set(
@@ -341,29 +342,35 @@ function createTrailer(x, y, z){
   
   twheelRR.position.set(
     -box.geometry.parameters.width / 2 + twheelRR.geometry.parameters.radiusTop + wheelGroupOffset,
-    - (box.geometry.parameters.height / 2 + twheelRR.geometry.parameters.radiusTop),
+    - (box.geometry.parameters.height / 2) - (wheelSupport.geometry.parameters.height) + wheelGap,
     (box.geometry.parameters.depth - twheelRR.geometry.parameters.height) / 2
   );
 
   twheelLR.position.set(
     -box.geometry.parameters.width / 2 + twheelLR.geometry.parameters.radiusTop + wheelGroupOffset,
-    - (box.geometry.parameters.height / 2 + twheelLR.geometry.parameters.radiusTop),
+    - (box.geometry.parameters.height / 2) - (wheelSupport.geometry.parameters.height) + wheelGap,
     - (box.geometry.parameters.depth - twheelLR.geometry.parameters.height) / 2
   );
 
   twheelFR.position.set(
     -box.geometry.parameters.width / 2 + twheelFR.geometry.parameters.radiusTop + wheelGroupOffset + 2*twheelFR.geometry.parameters.radiusTop + wheelGap,
-    - (box.geometry.parameters.height / 2 + twheelFR.geometry.parameters.radiusTop),
+    - (box.geometry.parameters.height / 2) - (wheelSupport.geometry.parameters.height) + wheelGap,
     (box.geometry.parameters.depth - twheelFR.geometry.parameters.height) / 2
   );
 
   twheelFL.position.set(
     -box.geometry.parameters.width / 2 + twheelFL.geometry.parameters.radiusTop + wheelGroupOffset + 2*twheelFL.geometry.parameters.radiusTop + wheelGap,
-    - (box.geometry.parameters.height / 2 + twheelFL.geometry.parameters.radiusTop),
+    - (box.geometry.parameters.height / 2) - (wheelSupport.geometry.parameters.height) + wheelGap,
     - (box.geometry.parameters.depth - twheelFL.geometry.parameters.height) / 2
   );
 
-  trailer.add(box, twheelRR, twheelLR, twheelFL, twheelFR, connectPiece);
+  wheelSupport.position.set(
+    -box.geometry.parameters.width / 2 + wheelSupport.geometry.parameters.width / 2 + wheelGroupOffset,
+    - (box.geometry.parameters.height / 2 + wheelSupport.geometry.parameters.height / 2),
+    (box.geometry.parameters.depth - wheelSupport.geometry.parameters.height) / 2
+  );
+
+  trailer.add(box, twheelRR, twheelLR, twheelFL, twheelFR, connectPiece, wheelSupport);
 
   trailer.position.set(x, y, z);
   
