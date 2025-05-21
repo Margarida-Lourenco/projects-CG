@@ -14,8 +14,9 @@ let scene;
 let renderer;
 
 let robot;
+
+let leg1, leg2;
 let trailer;
-let helper;
 
 let directions = {
   up: new THREE.Vector3(0, 1, 0),
@@ -398,12 +399,10 @@ function createRobot(x, y, z) {
     robot.add(new THREE.AxesHelper(10));
     robot.name = "robot";
     
-    const leg1 = createLeg();
-    leg1.name = "leg1";
+    leg1 = createLeg();
     leg1.position.set(-2.5, 25, 7.5);
 
-    const leg2 = createLeg();
-    leg2.name = "leg2";
+    leg2 = createLeg();
     leg2.position.set(-2.5, 25, -7.5);
     leg2.scale.z = -1;
 
@@ -450,8 +449,6 @@ function checkCollisions() {
 /* HANDLE COLLISIONS */
 ///////////////////////
 function handleCollisions() {
-  const leg1 = robot.getObjectByName("leg1");
-  const leg2 = robot.getObjectByName("leg2");
   const foot1 = leg1.getObjectByName("foot");
   const foot2 = leg2.getObjectByName("foot");
   const head = robot.getObjectByName("head");
@@ -530,13 +527,10 @@ function update() {
     trailer.position.addScaledVector(directions.right, trailerSpeed);
   }
 
-  const robotObj = scene.getObjectByName("robot"); // Renamed to avoid conflict with global 'robot'
-  if (!robotObj) {
+  if (!robot) {
     return; // No robot, no more updates needed for it
   }
 
-  const leg1 = robot.getObjectByName("leg1");
-  const leg2 = robot.getObjectByName("leg2");
   if (!leg1 || !leg2) {
     return;
   }
@@ -555,7 +549,7 @@ function update() {
   }
 
   // Head retraction
-  const head = robotObj.getObjectByName("head");
+  const head = robot.getObjectByName("head");
   if (head) {
     if (state.headBackward !== state.headForward) {
       headRetraction(head);
@@ -563,8 +557,8 @@ function update() {
   }
 
   // Arm translation
-  const leftArm = robotObj.getObjectByName("leftArm");
-  const rightArm = robotObj.getObjectByName("rightArm");
+  const leftArm = robot.getObjectByName("leftArm");
+  const rightArm = robot.getObjectByName("rightArm");
 
   if (leftArm && rightArm) {
     if (state.armOutward !== state.armInward) {
