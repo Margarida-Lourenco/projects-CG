@@ -15,6 +15,7 @@ let renderer;
 
 let robot;
 let trailer;
+let helper;
 
 let directions = {
   up: new THREE.Vector3(0, 1, 0),
@@ -63,6 +64,9 @@ const minFootRotation = -Math.PI / 2;
 const armTranslationLimit = 10; 
 const maxHeadRotation = Math.PI / 2;
 const minHeadRotation = 0;
+
+let robotBox;
+let trailerBox;
 
 /////////////////////
 /* CREATE SCENE(S) */
@@ -381,6 +385,12 @@ function createTrailer(x, y, z){
 
   trailer.position.set(x, y, z);
   
+  trailerBox = new THREE.Box3().setFromObject(trailer);
+    /* new THREE.Vector3(-trailer.geometry.parameters.width / 2, -trailer.geometry.parameters.height / 2, -trailer.geometry.parameters.depth / 2),
+    new THREE.Vector3(trailer.geometry.parameters.width / 2, trailer.geometry.parameters.height / 2, trailer.geometry.parameters.depth / 2)
+  )  */
+  const boxHelper = new THREE.Box3Helper(trailerBox, 0xffff00);
+  scene.add(boxHelper);
   scene.add(trailer);
 }
 
@@ -419,34 +429,112 @@ function createRobot(x, y, z) {
     scene.add(robot);
 
     robot.position.set(x, y, z);
+
+    robotBox = new THREE.Box3().setFromObject(robot);
+
+    const boxHelper = new THREE.Box3Helper(robotBox, 0xffff00);
+    scene.add(boxHelper);
 }
 
 //////////////////////
 /* CHECK COLLISIONS */
 //////////////////////
-function checkCollisions() {}
+function checkCollisions() {
+  return trailerBox.min.x < robotBox.max.x &&
+         trailerBox.max.x > robotBox.min.x &&
+         trailerBox.min.y < robotBox.max.y &&
+         trailerBox.max.y > robotBox.min.y &&
+         trailerBox.min.z < robotBox.max.z &&
+         trailerBox.max.z > robotBox.min.z;
+}
 
 ///////////////////////
 /* HANDLE COLLISIONS */
 ///////////////////////
-function handleCollisions() {}
+function handleCollisions() {
+  // If rotation values are not in the max when collision happens, it gracefuly rotates everything back to the max value.
+  // using legRotation, footRotation, headRetraction and armTranslation functions
+  LegRotation(robot.getObjectByName("leg1"), robot.getObjectByName("leg2"));
+  footRotation(robot.getObjectByName("leg1").getObjectByName("foot"), robot.getObjectByName("leg2").getObjectByName("foot"));
+  headRetraction(robot.getObjectByName("head"));
+  armTranslation(robot.getObjectByName("leftArm"), robot.getObjectByName("rightArm"));
+  
+}
 
 ////////////
 /* UPDATE */
 ////////////
 
+function updateBox(obj, box) {
+  box.setFromObject(obj);
+}
+
+function LegRotation(leg1, leg2) {
+  if (state.legsForward !== state.legsBackward) {
+    const rotDirection = state.legsForward ? rotationSpeed : -rotationSpeed;
+    // Leg1 and 2 rotation is linked.
+    if (leg1.rotation.z + rotDirection > minLegRotation && leg1.rotation.z + rotDirection < maxLegRotation) {
+      leg1.rotation.z += rotDirection;
+      leg2.rotation.z += rotDirection;
+    }
+    robotBox.setFromObject(robot);
+  }
+}
+
+function footRotation(foot1, foot2) {
+  if (state.feetBackward !== state.feetForward) {
+    const rotDirection = state.feetForward ? rotationSpeed : -rotationSpeed;
+    if (foot1.rotation.z + rotDirection >= minFootRotation && foot1.rotation.z + rotDirection <= maxFootRotation) {
+      foot1.rotation.z += rotDirection;
+      foot2.rotation.z += rotDirection;
+    }
+  }
+  robotBox.setFromObject(robot);
+}
+
+function headRetraction(head) {
+  if (state.headBackward !== state.headForward) {
+    const rotDirection = state.headForward ? -rotationSpeed : rotationSpeed;
+    if (head.rotation.z + rotDirection > minHeadRotation && head.rotation.z + rotDirection < maxHeadRotation) {
+      head.rotation.z += rotDirection;
+    }
+  }
+  robotBox.setFromObject(robot);
+}
+
+function armTranslation(leftArm, rightArm) {
+  if (state.armOutward !== state.armInward) {
+    if (state.armOutward && state.armTranslation < armTranslationLimit) {
+      state.armTranslation += armTranslationSpeed;
+      leftArm.position.z -= armTranslationSpeed;
+      rightArm.position.z += armTranslationSpeed;
+    }
+    if (state.armInward && state.armTranslation > 0) {
+      state.armTranslation -= armTranslationSpeed;
+      leftArm.position.z += armTranslationSpeed;
+      rightArm.position.z -= armTranslationSpeed;
+    }
+  }
+  robotBox.setFromObject(robot);
+}
+
+
 function update() {
   if (state.up) {
     trailer.position.addScaledVector(directions.up, trailerSpeed);
+    updateBox(trailer, trailerBox);
   }
   if (state.down) {
     trailer.position.addScaledVector(directions.down, trailerSpeed);
+    updateBox(trailer, trailerBox);
   }
   if (state.left) {
     trailer.position.addScaledVector(directions.left, trailerSpeed);
+    updateBox(trailer, trailerBox);
   }
   if (state.right) {
     trailer.position.addScaledVector(directions.right, trailerSpeed);
+    updateBox(trailer, trailerBox);
   }
 
   const robotObj = scene.getObjectByName("robot"); // Renamed to avoid conflict with global 'robot'
@@ -461,59 +549,32 @@ function update() {
   }
 
   // Leg rotation
-  if (state.legsForward !== state.legsBackward) {
-    const rotDirection = state.legsForward ? rotationSpeed : -rotationSpeed;
-    // Leg1 and 2 rotation is linked.
-    if (leg1.rotation.z + rotDirection > minLegRotation && leg1.rotation.z + rotDirection < maxLegRotation) {
-      leg1.rotation.z += rotDirection;
-      leg2.rotation.z += rotDirection;
-    }
+  LegRotation(leg1, leg2);
+
+  // Foot rotation
+  const foot1 = leg1.getObjectByName("foot");
+  const foot2 = leg2.getObjectByName("foot");
+  if (foot1 && foot2) {
+    footRotation(foot1, foot2);
   }
 
-    const foot1 = leg1.getObjectByName("foot");
-    const foot2 = leg2.getObjectByName("foot");
-    if (foot1 && foot2) {
-      if (state.feetBackward !== state.feetForward) {
-        const rotDirection = state.feetForward ? rotationSpeed : -rotationSpeed;
-        if ((foot1.rotation.z + rotDirection >= minFootRotation && foot1.rotation.z + rotDirection <= maxFootRotation)) {
-          foot1.rotation.z += rotDirection;
-          foot2.rotation.z += rotDirection;
-        }
-      }
-    }
-
-    // Head retraction
-    const head = robotObj.getObjectByName("head");
-    if (head) {
-      if (state.headBackward !== state.headForward) {
-        console.log("headBackward", state.headBackward);
-        // Rotation speed here is inverted, in the sense that "backward" means "towards the back of the truck".
-        const rotDirection = state.headForward ? -rotationSpeed : rotationSpeed;
-        if (head.rotation.z + rotDirection > minHeadRotation && head.rotation.z + rotDirection < maxHeadRotation) {
-          head.rotation.z += rotDirection;
-        }
-      }
-    }
-
-  
+  // Head retraction
+  const head = robotObj.getObjectByName("head");
+  if (head) {
+    headRetraction(head);
+  }
 
   // Arm translation
   const leftArm = robotObj.getObjectByName("leftArm");
   const rightArm = robotObj.getObjectByName("rightArm");
 
-  if (leftArm && rightArm && state.armOutward !== state.armInward) {
-    if (state.armOutward && state.armTranslation < armTranslationLimit) {
-      state.armTranslation += armTranslationSpeed;
-      leftArm.position.z -= armTranslationSpeed;
-      rightArm.position.z += armTranslationSpeed;
-      console.log(leftArm.position.z, rightArm.position.z);
-    }
-    if (state.armInward && state.armTranslation > 0) {
-      state.armTranslation -= armTranslationSpeed;
-      leftArm.position.z += armTranslationSpeed;
-      rightArm.position.z -= armTranslationSpeed;
-      console.log(leftArm.position.z, rightArm.position.z);
-    }
+  if (leftArm && rightArm) {
+    armTranslation(leftArm, rightArm);
+  }
+
+  if (checkCollisions()) {
+    console.log("Collision detected!");
+    handleCollisions();
   }
 }
 
