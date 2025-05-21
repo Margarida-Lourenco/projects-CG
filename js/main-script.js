@@ -14,12 +14,15 @@ let keyStates = {}; // To store the state of pressed keys
 
 const debugFlag = true; // Set to true to enable scene helpers
 
-const TERRAIN_WIDTH = 1000; 
+const TERRAIN_WIDTH = 3560; 
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
-const TERRAIN_SEGMENTS_WIDTH = 100; 
+const TERRAIN_SEGMENTS_WIDTH = 500; // Number of segments in the width
 const TERRAIN_SEGMENTS_HEIGHT = TERRAIN_SEGMENTS_WIDTH; 
-const HEIGHTMAP_SCALE = 100; 
+const HEIGHTMAP_SCALE = 250; 
 const SKYDOME_SCALE = 0.5; // Percentage of terrain width
+const HEIGHTMAP_AREA_SELECTION_RATIO = 0.4; // Value between 0 (exclusive) and 1 (inclusive). 1 = full image, 0.5 = half area.
+// Original heightmap was 17.8km wide, so 0.2 = 3.56km wide
+// Original size * Scale / Width = IRL Meters per unit
 
 function init() {
     scene = new THREE.Scene();
@@ -35,6 +38,8 @@ function init() {
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
+    controls.target.set(0, 100, 0);
+    controls.update(); // Required after changing the target
 
     createMoon(); // Moon position will be updated within this function based on TERRAIN_WIDTH
     createDirectionalLight(); // Light position will be updated
@@ -80,7 +85,35 @@ function createTerrain(heightmapTexture, floralTexture) {
     canvas.height = img.height;
     const context = canvas.getContext('2d');
     context.drawImage(img, 0, 0);
-    const heightmapData = context.getImageData(0, 0, img.width, img.height).data;
+
+    // Calculate dimensions for selecting the central portion of the image area
+    // based on HEIGHTMAP_AREA_SELECTION_RATIO
+    if (HEIGHTMAP_AREA_SELECTION_RATIO <= 0 || HEIGHTMAP_AREA_SELECTION_RATIO > 1) {
+        console.warn('HEIGHTMAP_AREA_SELECTION_RATIO must be between 0 (exclusive) and 1 (inclusive). Defaulting to 1 (full image).');
+        var selectionScaleFactor = 1;
+    } else {
+        selectionScaleFactor = Math.sqrt(HEIGHTMAP_AREA_SELECTION_RATIO);
+    }
+
+    const sWidth = Math.floor(img.width * selectionScaleFactor);
+    const sHeight = Math.floor(img.height * selectionScaleFactor);
+    const sx = Math.floor((img.width - sWidth) / 2);
+    const sy = Math.floor((img.height - sHeight) / 2);
+
+    // Ensure sWidth and sHeight are positive
+    if (sWidth <= 0 || sHeight <= 0) {
+        console.error("Calculated sWidth or sHeight for getImageData is not positive. Using full image as fallback.");
+        // Fallback to using the entire image if calculation is problematic
+        const fullImageData = context.getImageData(0, 0, img.width, img.height);
+        var heightmapData = fullImageData.data;
+        var effectiveWidth = img.width;
+        var effectiveHeight = img.height;
+    } else {
+        const imageData = context.getImageData(sx, sy, sWidth, sHeight);
+        heightmapData = imageData.data;
+        effectiveWidth = sWidth;
+        effectiveHeight = sHeight;
+    }
 
     const vertices = terrainGeometry.attributes.position;
     for (let i = 0, j = 0; i < vertices.count; i++, j += 3) {
@@ -90,12 +123,21 @@ function createTerrain(heightmapTexture, floralTexture) {
         const v = 1 - (vertices.getY(i) / TERRAIN_HEIGHT + 0.5); // Normalize to 0-1 and flip Y
 
         if (u >= 0 && u <= 1 && v >= 0 && v <= 1) {
-            const tx = Math.min(Math.floor(u * img.width), img.width -1) ;
-            const ty = Math.min(Math.floor(v * img.height), img.height -1);
-            const pixelIndex = (ty * img.width + tx) * 4; // R, G, B, A
-            const heightValue = heightmapData[pixelIndex] / 255; // Use Red channel, normalize to 0-1
-
-            vertices.setZ(i, heightValue * HEIGHTMAP_SCALE);
+            // Map u,v (0-1) to tx,ty coordinates within the *extracted* heightmapData
+            const tx = Math.min(Math.floor(u * effectiveWidth), effectiveWidth - 1);
+            const ty = Math.min(Math.floor(v * effectiveHeight), effectiveHeight - 1);
+            
+            // Calculate pixelIndex using effectiveWidth (the width of the data we are sampling from)
+            const pixelIndex = (ty * effectiveWidth + tx) * 4; // R, G, B, A
+            
+            if (pixelIndex >= 0 && pixelIndex < heightmapData.length) {
+                const heightValue = heightmapData[pixelIndex] / 255; // Use Red channel, normalize to 0-1
+                vertices.setZ(i, heightValue * HEIGHTMAP_SCALE);
+            } else {
+                vertices.setZ(i, 0); // Default to flat if pixelIndex is out of bounds
+            }
+        } else {
+            vertices.setZ(i, 0); // Default to flat if u,v are out of expected [0,1] range
         }
     }
     vertices.needsUpdate = true;
@@ -103,10 +145,10 @@ function createTerrain(heightmapTexture, floralTexture) {
 
     const terrainMaterial = new THREE.MeshStandardMaterial({
         map: floralTexture,
-        side: THREE.DoubleSide, // Render both sides, useful for varied terrain
-        displacementMap: heightmapTexture, // Optional: can also use displacement map directly if desired
+        side: THREE.SingleSide, // Render both sides, useful for varied terrain
+        displacementMap: heightmapTexture,
         displacementScale: HEIGHTMAP_SCALE, // Sync with manual displacement
-        roughness: 0.8,
+        roughness: 0.9,
         metalness: 0.2
     });
 
@@ -120,16 +162,13 @@ function createSkydome() {
     const skydomeRadius = TERRAIN_WIDTH * SKYDOME_SCALE; // Skydome smaller, will clip into terrain edges
     const skydomeGeometry = new THREE.SphereGeometry(skydomeRadius, 60, 40);
     // Invert geometry on the x-axis so that faces point inward
-    skydomeGeometry.scale(-1, 1, 1);
+    skydomeGeometry.scale(1, 1, 1);
 
     const starrySkyTexture = createStarrySkyTexture();
-    starrySkyTexture.minFilter = THREE.NearestFilter; // For sharper stars
-    starrySkyTexture.magFilter = THREE.NearestFilter; // For sharper stars
-    starrySkyTexture.anisotropy = renderer.capabilities.getMaxAnisotropy(); // Improves texture quality at glancing angles
 
     const skydomeMaterial = new THREE.MeshBasicMaterial({
         map: starrySkyTexture,
-        side: THREE.FrontSide // Render the inside of the sphere
+        side: THREE.BackSide // Render the inside of the sphere
     });
 
     const skydomeMesh = new THREE.Mesh(skydomeGeometry, skydomeMaterial);
@@ -188,7 +227,7 @@ function createDirectionalLight() {
 
 function createUFO() {
     const ufoGroup = new THREE.Group();
-    const bodyRadius = 30;
+    const bodyRadius = 6;
     const cockpitRadius = bodyRadius / 3; 
     const cockpitFlattening = 0.75; 
     const bodyFlattening = 0.25;
@@ -198,9 +237,23 @@ function createUFO() {
     const smallSphereRadius = bodyRadius * 0.05; // Size of the small spheres
 
     // Reverted transparency, kept emissive for lightMaterial
-    const ufoCockpitMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 0.2});
-    const lightMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.8 });
-    const ufoBodyMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
+    const lightMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff33, emissive: 0x00ff33, emissiveIntensity: 0.8 });
+    const ufoCockpitMaterial = new THREE.MeshStandardMaterial(
+        { 
+            color: 0x00ff33, 
+            emissive: 0x00ff33, 
+            emissiveIntensity: 0.2,
+            metalness: 0.5,
+            roughness: 0.1,
+        }
+    );
+    const ufoBodyMaterial = new THREE.MeshStandardMaterial(
+        { 
+            color: 0x444444, 
+            metalness: 0.9,
+            roughness: 0.3,
+        }
+    );
 
     const ufoCockpitGeometry = new THREE.SphereGeometry(cockpitRadius, 32, 16, 0, Math.PI * 2 , 0, Math.PI / 2);
     const ufoCockpitMesh = new THREE.Mesh(ufoCockpitGeometry, ufoCockpitMaterial);
