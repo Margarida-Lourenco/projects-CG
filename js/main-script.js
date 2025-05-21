@@ -302,29 +302,48 @@ function createTrailer(x, y, z){
   trailer = new THREE.Object3D();
   trailer.add(new THREE.AxesHelper(10));
 
-  box = new THREE.Mesh(new THREE.BoxGeometry(35, 35, 95), materials.grey);
-
-  connect_piece = new THREE.Mesh(new THREE.BoxGeometry(15, 5, 15), materials.grey);
+  let box = new THREE.Mesh(new THREE.BoxGeometry(95, 35, 35), materials.grey);
+  let connectPiece = new THREE.Mesh(new THREE.BoxGeometry(15, 5, 15), materials.grey);
 
   box.position.set(0, 0, 0);
-  connect_piece.position.set(0, -20, 30);
+  connectPiece.position.set(
+    box.geometry.parameters.width / 2 - connectPiece.geometry.parameters.width,  
+    - (box.geometry.parameters.height + connectPiece.geometry.parameters.height) / 2, 
+    0);
+  
+  const wheelGap = 2.5; // Gap between the surface of the wheels
+  const wheelGroupOffset = 8; // Vertical offset of the wheel group to the end of the trailer
+  
+  let twheelRR = addWheel(); // Right rear
+  let twheelLR = addWheel(); // Left rear
+  let twheelFR = addWheel(); // Right front
+  let twheelFL = addWheel(); // Left front
+  
+  twheelRR.position.set(
+    -box.geometry.parameters.width / 2 + twheelRR.geometry.parameters.radiusTop + wheelGroupOffset,
+    - (box.geometry.parameters.height / 2 + twheelRR.geometry.parameters.radiusTop),
+    (box.geometry.parameters.depth - twheelRR.geometry.parameters.height) / 2
+  );
 
-  twheel1 = addWheel();
-  twheel2 = addWheel(); 
-  twheel3 = addWheel();
-  twheel4 = addWheel();
+  twheelLR.position.set(
+    -box.geometry.parameters.width / 2 + twheelLR.geometry.parameters.radiusTop + wheelGroupOffset,
+    - (box.geometry.parameters.height / 2 + twheelLR.geometry.parameters.radiusTop),
+    - (box.geometry.parameters.depth - twheelLR.geometry.parameters.height) / 2
+  );
 
-  twheel1.position.set(-15, -23.5, -41.5);
-  twheel2.position.set(-15, -23.5, -27.5);
-  twheel3.position.set(15, -23.5, -27.5);
-  twheel4.position.set(15, -23.5, -41.5);
+  twheelFR.position.set(
+    -box.geometry.parameters.width / 2 + twheelFR.geometry.parameters.radiusTop + wheelGroupOffset + 2*twheelFR.geometry.parameters.radiusTop + wheelGap,
+    - (box.geometry.parameters.height / 2 + twheelFR.geometry.parameters.radiusTop),
+    (box.geometry.parameters.depth - twheelFR.geometry.parameters.height) / 2
+  );
 
-  twheel1.rotation.z = Math.PI / 2;
-  twheel2.rotation.z = Math.PI / 2;
-  twheel3.rotation.z = Math.PI / 2;
-  twheel4.rotation.z = Math.PI / 2;
+  twheelFL.position.set(
+    -box.geometry.parameters.width / 2 + twheelFL.geometry.parameters.radiusTop + wheelGroupOffset + 2*twheelFL.geometry.parameters.radiusTop + wheelGap,
+    - (box.geometry.parameters.height / 2 + twheelFL.geometry.parameters.radiusTop),
+    - (box.geometry.parameters.depth - twheelFL.geometry.parameters.height) / 2
+  );
 
-  trailer.add(box, twheel1, twheel2, twheel3, twheel4, connect_piece);
+  trailer.add(box, twheelRR, twheelLR, twheelFL, twheelFR, connectPiece);
 
   trailer.position.set(x, y, z);
   
