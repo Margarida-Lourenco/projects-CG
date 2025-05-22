@@ -12,7 +12,7 @@ const UFO_ROTATION_SPEED = 0.02; // radians per frame
 const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibility)
 let keyStates = {}; // To store the state of pressed keys
 
-const debugFlag = true; // Set to true to enable scene helpers
+const debugFlag = false; // Set to true to enable scene helpers
 
 const TERRAIN_WIDTH = 3560; 
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
@@ -20,8 +20,8 @@ const TERRAIN_SEGMENTS_WIDTH = 500; // Number of segments in the width
 const TERRAIN_SEGMENTS_HEIGHT = TERRAIN_SEGMENTS_WIDTH; 
 const TERRAIN_TEXTURE_WIDTH_IN_WORLD = 100 // Size of texture in units
 const TERRAIN_TEXTURE_HEIGHT_IN_WORLD = TERRAIN_TEXTURE_WIDTH_IN_WORLD // Size of texture in units
-const HEIGHTMAP_SCALE = 200;
-const HEIGHTMAP_AREA_SELECTION_RATIO = 1; // Value between 0 (exclusive) and 1 (inclusive). 1 = full image, 0.5 = half area.
+const HEIGHTMAP_SCALE = 300;
+const HEIGHTMAP_AREA_SELECTION_RATIO = 0.6; // Value between 0 (exclusive) and 1 (inclusive). 1 = full image, 0.5 = half area.
 
 const MOON_SCALE = 0.025; // Radius as percentage of terrain width
 const SKYDOME_SCALE = 0.5; // Radius as percentage of terrain width
@@ -32,7 +32,8 @@ const NUM_STARS = 800; // Number of stars in the starry sky texture
 const STAR_SIZE = 0.5; // Minimum star size
 const STAR_VARIATION = 0.2; // Variation in star size
 const SKY_TEXTURE_WIDTH = 4096 * 2; // Width of the starry sky texture
-const SKY_TEXTURE_HEIGHT = SKY_TEXTURE_WIDTH; // Height of the starry sky texture
+const SKY_TEXTURE_HEIGHT = SKY_TEXTURE_WIDTH / 2; // Mapping is 2:1
+// Avoids stretching at equator but more distortion at poles
 
 const UFO_ALTITUDE = 200; // Height of UFO above terrain
 // Original heightmap was 17.8km wide, so 0.2 = 3.56km wide
@@ -294,7 +295,7 @@ function createUFO() {
     const ufoBeamGeometry = new THREE.CylinderGeometry(beamRadius, beamRadius, beamHeight, 32);
     const ufoBeamMesh = new THREE.Mesh(ufoBeamGeometry, ufoBodyMaterial);
     
-    const ufoBeamLight = new THREE.SpotLight(0x00ff33, 5,  -UFO_ALTITUDE, Math.PI / 12, 1, 0.4); // color, intensity, distance, angle, penumbra, decay
+    const ufoBeamLight = new THREE.SpotLight(0x00ff33, 5,  UFO_ALTITUDE, Math.PI / 12, 1, 0.4); // color, intensity, distance, angle, penumbra, decay
     ufoBeamMesh.position.y = - (bodyRadius * bodyFlattening) / 2 - beamHeight / 2 + (bodyRadius * bodyFlattening * 0.5); // Position beam bottom at the body's bottom edge
     ufoBeamLight.position.set(0, 0, 0); 
     ufoBeamLight.castShadow = true; // Enable shadow casting
