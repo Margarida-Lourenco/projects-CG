@@ -18,6 +18,8 @@ const TERRAIN_WIDTH = 3560;
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
 const TERRAIN_SEGMENTS_WIDTH = 500; // Number of segments in the width
 const TERRAIN_SEGMENTS_HEIGHT = TERRAIN_SEGMENTS_WIDTH; 
+const TERRAIN_TEXTURE_WIDTH_IN_WORLD = 100 // Size of texture in units
+const TERRAIN_TEXTURE_HEIGHT_IN_WORLD = TERRAIN_TEXTURE_WIDTH_IN_WORLD // Size of texture in units
 const HEIGHTMAP_SCALE = 100;
 const SKYDOME_SCALE = 0.5; // Radius as percentage of terrain width
 const HEIGHTMAP_AREA_SELECTION_RATIO = 1; // Value between 0 (exclusive) and 1 (inclusive). 1 = full image, 0.5 = half area.
@@ -28,7 +30,14 @@ const UFO_ALTITUDE = 200; // Height of UFO above terrain
 function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
-
+    if (debugFlag) {
+            const axesHelper = new THREE.AxesHelper(1000);
+            scene.add(axesHelper);
+            const gridHelper = new THREE.GridHelper(TERRAIN_WIDTH, TERRAIN_WIDTH / TERRAIN_TEXTURE_WIDTH_IN_WORLD);
+            scene.add(gridHelper);
+            axesHelper.position.set(0, 100, 0);
+            gridHelper.position.set(0, 50, 0);
+    }
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4); // Adjusted far clipping plane
     camera.position.set(0, TERRAIN_WIDTH * 0.5, TERRAIN_WIDTH * 0.5); // Adjusted camera for new scale
 
