@@ -463,19 +463,19 @@ function areArmsAtMaxTranslation() {
 }
 
 function isHeadatMaxRotation() {
-  const rotDirection = state.headForward ? rotationSpeed : -rotationSpeed;
+  const rotDirection = state.headForward ? -rotationSpeed : rotationSpeed;
   const targetRot = head.rotation.z + rotDirection;
   if (rotDirection > 0) {
-    return targetRot <= maxHeadRotation; 
+    return targetRot >= maxHeadRotation; 
   } else {
-    return targetRot >= minHeadRotation;
+    return targetRot <= minHeadRotation;
   }
 }
 
 function robotOnTruckForm() {
   return areLegsAtMaxRotation() &&
          areFeetAtMaxRotation()&&
-         //isHeadatMaxRotation()&&
+         isHeadatMaxRotation()&&
          areArmsAtMaxTranslation()
 }
 
