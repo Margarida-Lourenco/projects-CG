@@ -12,7 +12,7 @@ const UFO_ROTATION_SPEED = 0.02; // radians per frame
 const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibility)
 let keyStates = {}; // To store the state of pressed keys
 
-const debugFlag = true; // Set to true to enable scene helpers
+const debugFlag = false; // Set to true to enable scene helpers
 
 const TERRAIN_WIDTH = 3560; 
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
@@ -21,7 +21,7 @@ const TERRAIN_SEGMENTS_HEIGHT = TERRAIN_SEGMENTS_WIDTH;
 const HEIGHTMAP_SCALE = 100;
 const SKYDOME_SCALE = 0.5; // Radius as percentage of terrain width
 const HEIGHTMAP_AREA_SELECTION_RATIO = 1; // Value between 0 (exclusive) and 1 (inclusive). 1 = full image, 0.5 = half area.
-const UFO_ALTITUDE = 80; // Height of UFO above terrain
+const UFO_ALTITUDE = 200; // Height of UFO above terrain
 // Original heightmap was 17.8km wide, so 0.2 = 3.56km wide
 // Original size * Scale / Width = IRL Meters per unit
 
@@ -228,7 +228,7 @@ function createDirectionalLight() {
 
 function createUFO() {
     const ufoGroup = new THREE.Group();
-    const bodyRadius = 6;
+    const bodyRadius = 20;
     const cockpitRadius = bodyRadius / 3; 
     const cockpitFlattening = 0.75; 
     const bodyFlattening = 0.25;
@@ -243,10 +243,10 @@ function createUFO() {
     const ufoCockpitMaterial = new THREE.MeshStandardMaterial(
         { 
             color: 0x00ff33, 
-            emissive: 0x00ff33, 
-            emissiveIntensity: 0.2,
-            metalness: 0.5,
-            roughness: 0.1,
+            //emissive: 0x00ff33, 
+            //emissiveIntensity: 0.2,
+            metalness: 0.3,
+            roughness: 0.0,
         }
     );
     const ufoBodyMaterial = new THREE.MeshStandardMaterial(
@@ -271,10 +271,9 @@ function createUFO() {
     const beamHeight = bodyRadius * bodyFlattening + smallSphereRadius; // Height of cilinder part of UFO
     const ufoBeamGeometry = new THREE.CylinderGeometry(beamRadius, beamRadius, beamHeight, 32);
     const ufoBeamMesh = new THREE.Mesh(ufoBeamGeometry, ufoBodyMaterial);
-    ufoBeamMesh.position.y = - (bodyRadius * bodyFlattening) / 2 - beamHeight / 2 + (bodyRadius * bodyFlattening * 0.5); // Position beam bottom at the body's bottom edge
     
-    // TODO: Cap beam at ufo height
-    const ufoBeamLight = new THREE.SpotLight(0x00ff33, 5,  -UFO_ALTITUDE, Math.PI / 6, 1, 0.4); // color, intensity, distance, angle, penumbra, decay
+    const ufoBeamLight = new THREE.SpotLight(0x00ff33, 5,  -UFO_ALTITUDE, Math.PI / 12, 1, 0.4); // color, intensity, distance, angle, penumbra, decay
+    ufoBeamMesh.position.y = - (bodyRadius * bodyFlattening) / 2 - beamHeight / 2 + (bodyRadius * bodyFlattening * 0.5); // Position beam bottom at the body's bottom edge
     ufoBeamLight.position.set(0, 0, 0); 
 
     ufoBeamMesh.add(ufoBeamLight); 
