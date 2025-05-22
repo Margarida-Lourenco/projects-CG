@@ -12,7 +12,7 @@ const UFO_ROTATION_SPEED = 0.02; // radians per frame
 const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibility)
 let keyStates = {}; // To store the state of pressed keys
 
-const debugFlag = false; // Set to true to enable scene helpers
+const debugFlag = true; // Set to true to enable scene helpers
 
 const TERRAIN_WIDTH = 3560; 
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
@@ -274,13 +274,8 @@ function createUFO() {
     ufoBeamMesh.position.y = - (bodyRadius * bodyFlattening) / 2 - beamHeight / 2 + (bodyRadius * bodyFlattening * 0.5); // Position beam bottom at the body's bottom edge
     
     // TODO: Cap beam at ufo height
-    const ufoBeamLight = new THREE.SpotLight(0x00ff33, 1,  80, Math.PI / 8, 1, 0); // color, intensity, distance, angle, penumbra, decay
+    const ufoBeamLight = new THREE.SpotLight(0x00ff33, 5,  -UFO_ALTITUDE, Math.PI / 6, 1, 0.4); // color, intensity, distance, angle, penumbra, decay
     ufoBeamLight.position.set(0, 0, 0); 
-    const beamLightTarget = new THREE.Object3D();
-    beamLightTarget.position.set(0, -UFO_ALTITUDE, 0); // Terrain will always be slightly higher than ALT value
-    ufoBeamLight.target = beamLightTarget; 
-    ufoBeamMesh.add(beamLightTarget); // Add target to the beam mesh
-
 
     ufoBeamMesh.add(ufoBeamLight); 
     
