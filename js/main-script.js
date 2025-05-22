@@ -7,7 +7,7 @@ import { createFloralFieldTexture, createStarrySkyTexture } from './procedural-t
 
 let scene, camera, renderer, controls;
 let terrainMesh, moonMesh, directionalLight;
-let ufo; // ufo will store the UFO group
+let ufo; // stores the UFO group
 const UFO_ROTATION_SPEED = 0.02; // radians per frame
 const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibility)
 let keyStates = {}; // To store the state of pressed keys
@@ -18,9 +18,10 @@ const TERRAIN_WIDTH = 3560;
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
 const TERRAIN_SEGMENTS_WIDTH = 500; // Number of segments in the width
 const TERRAIN_SEGMENTS_HEIGHT = TERRAIN_SEGMENTS_WIDTH; 
-const HEIGHTMAP_SCALE = 250; 
-const SKYDOME_SCALE = 0.5; // Percentage of terrain width
-const HEIGHTMAP_AREA_SELECTION_RATIO = 0.4; // Value between 0 (exclusive) and 1 (inclusive). 1 = full image, 0.5 = half area.
+const HEIGHTMAP_SCALE = 100;
+const SKYDOME_SCALE = 0.5; // Radius as percentage of terrain width
+const HEIGHTMAP_AREA_SELECTION_RATIO = 1; // Value between 0 (exclusive) and 1 (inclusive). 1 = full image, 0.5 = half area.
+const UFO_ALTITUDE = 80; // Height of UFO above terrain
 // Original heightmap was 17.8km wide, so 0.2 = 3.56km wide
 // Original size * Scale / Width = IRL Meters per unit
 
@@ -64,7 +65,7 @@ function init() {
     window.addEventListener('keyup', onKeyUp, false); // Added keyup listener for movement
 
     ufo = createUFO(); // Assign created UFO to global variable
-    ufo.position.set(0, 80, 0); // Position UFO above the terrain
+    ufo.position.set(0, UFO_ALTITUDE, 0); // Position UFO above the terrain
     scene.add(ufo);
 
     animate();
@@ -233,8 +234,9 @@ function createUFO() {
     const bodyFlattening = 0.25;
 
     const numLights = 8; // Number of small spheres (lights)
-    const lightRadius = bodyRadius * 0.4; // Radius at which lights are placed, slightly inside the body
+    const lightRadius = bodyRadius * 0.6; // Radius at which lights are placed, slightly inside the body
     const smallSphereRadius = bodyRadius * 0.05; // Size of the small spheres
+    const beamRadius = lightRadius * 0.8 - smallSphereRadius; // Radius of the beam cilinder, slightly smaller than the lights
 
     // Reverted transparency, kept emissive for lightMaterial
     const lightMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff33, emissive: 0x00ff33, emissiveIntensity: 0.8 });
@@ -252,6 +254,8 @@ function createUFO() {
             color: 0x444444, 
             metalness: 0.9,
             roughness: 0.3,
+            transparent: debugFlag,
+            opacity: debugFlag ? 0.5 : 1, // Set to 0.5 if debugFlag is true
         }
     );
 
@@ -264,19 +268,49 @@ function createUFO() {
     const ufoBodyMesh = new THREE.Mesh(ufoBodyGeometry, ufoBodyMaterial);
     ufoBodyMesh.scale.set(1, bodyFlattening, 1); 
 
-    ufoGroup.add(ufoCockpitMesh, ufoBodyMesh)
+    const beamHeight = bodyRadius * bodyFlattening + smallSphereRadius; // Height of cilinder part of UFO
+    const ufoBeamGeometry = new THREE.CylinderGeometry(beamRadius, beamRadius, beamHeight, 32);
+    const ufoBeamMesh = new THREE.Mesh(ufoBeamGeometry, ufoBodyMaterial);
+    ufoBeamMesh.position.y = - (bodyRadius * bodyFlattening) / 2 - beamHeight / 2 + (bodyRadius * bodyFlattening * 0.5); // Position beam bottom at the body's bottom edge
+    
+    // TODO: Cap beam at ufo height
+    const ufoBeamLight = new THREE.SpotLight(0x00ff33, 1,  80, Math.PI / 8, 1, 0); // color, intensity, distance, angle, penumbra, decay
+    ufoBeamLight.position.set(0, 0, 0); 
+    const beamLightTarget = new THREE.Object3D();
+    beamLightTarget.position.set(0, -UFO_ALTITUDE, 0); // Terrain will always be slightly higher than ALT value
+    ufoBeamLight.target = beamLightTarget; 
+    ufoBeamMesh.add(beamLightTarget); // Add target to the beam mesh
+
+
+    ufoBeamMesh.add(ufoBeamLight); 
+    
+    if (debugFlag) {
+        const beamLightHelper = new THREE.SpotLightHelper(ufoBeamLight);
+        ufoBeamMesh.add(beamLightHelper); 
+    }
+
+    ufoGroup.add(ufoCockpitMesh, ufoBodyMesh, ufoBeamMesh); 
 
     for (let i = 0; i < numLights; i++) {
-        const angle = (i / numLights) * Math.PI * 2; // Angle for each sphere
-
+        const angle = (i / numLights) * Math.PI * 2; // Angle staggering for each sphere, not editable
         const lightGeometry = new THREE.SphereGeometry(smallSphereRadius, 8, 8);
         const lightMesh = new THREE.Mesh(lightGeometry, lightMaterial);
+        lightMesh.castShadow = false; // Makes it not interfere with point light
 
         lightMesh.position.x = Math.cos(angle) * lightRadius;
         lightMesh.position.z = Math.sin(angle) * lightRadius;
         lightMesh.position.y = - Math.sqrt(bodyRadius * bodyRadius - lightRadius * lightRadius) * bodyFlattening; //Pin lights to surface of UFO body 
 
-        ufoGroup.add(lightMesh);
+        const pointLight = new THREE.PointLight(0x00ff33, 10, 0, 3); // color, intensity, distance
+        lightMesh.add(pointLight);
+
+        if (debugFlag) { 
+            const pointLightHelper = new THREE.PointLightHelper(pointLight, smallSphereRadius * 2);
+            scene.add(pointLightHelper);
+        }
+        
+        pointLight.position.set(0, -smallSphereRadius * 0.5, 0); 
+        ufoGroup.add(lightMesh); // Add the light sphere to the UFO group
     }
 
     return ufoGroup;
