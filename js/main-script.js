@@ -12,7 +12,7 @@ const UFO_ROTATION_SPEED = 0.02; // radians per frame
 const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibility)
 let keyStates = {}; // To store the state of pressed keys
 
-const debugFlag = true; // Set to true to enable scene helpers
+const debugFlag = false; // Set to true to enable scene helpers
 
 const TERRAIN_WIDTH = 3560; 
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
@@ -301,9 +301,9 @@ function createUFO() {
         lightMesh.position.z = Math.sin(angle) * lightRadius;
         lightMesh.position.y = - Math.sqrt(bodyRadius * bodyRadius - lightRadius * lightRadius) * bodyFlattening; //Pin lights to surface of UFO body 
 
-        const pointLight = new THREE.PointLight(0x00ff33, 10, 0, 3); // color, intensity, distance
+        const pointLight = new THREE.PointLight(0x00ff33, 5, 0, 3); // color, intensity, distance
         lightMesh.add(pointLight);
-
+        pointLight.position.set(0, -smallSphereRadius/2, 0); // Position point light halfway between sphere and body
         if (debugFlag) { 
             const pointLightHelper = new THREE.PointLightHelper(pointLight, smallSphereRadius * 2);
             scene.add(pointLightHelper);
