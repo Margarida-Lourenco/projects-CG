@@ -434,7 +434,52 @@ function createRobot(x, y, z) {
 //////////////////////
 /* CHECK COLLISIONS */
 //////////////////////
-function checkCollisions() {
+
+function areLegsAtMaxRotation() {
+  const rotDirection = state.legsForward ? rotationSpeed : -rotationSpeed;
+  const targetRot = leftLeg.rotation.z + rotDirection;
+
+  if (rotDirection > 0) {
+    return targetRot >= maxLegRotation;
+  } else {
+    return targetRot <= minLegRotation;
+  }
+}
+
+function areFeetAtMaxRotation() {
+
+  const rotDirection = state.feetForward ? rotationSpeed : -rotationSpeed;
+  const targetRot = leftLeg.getObjectByName("foot").rotation.z + rotDirection;
+  if (rotDirection > 0) {
+    return targetRot >= maxFootRotation;
+  } else {
+    return targetRot <= minFootRotation;
+  }
+}
+
+function areArmsAtMaxTranslation() {
+  const targetTranslation = state.armTranslation + armTranslationSpeed;
+  return targetTranslation >= armTranslationLimit;
+}
+
+function isHeadatMaxRotation() {
+  const rotDirection = state.headForward ? rotationSpeed : -rotationSpeed;
+  const targetRot = head.rotation.z + rotDirection;
+  if (rotDirection > 0) {
+    return targetRot <= maxHeadRotation; 
+  } else {
+    return targetRot >= minHeadRotation;
+  }
+}
+
+function robotOnTruckForm() {
+  return areLegsAtMaxRotation() &&
+         areFeetAtMaxRotation()&&
+         //isHeadatMaxRotation()&&
+         areArmsAtMaxTranslation()
+}
+
+function isColliding() {
   return trailerBox.min.x < robotBox.max.x &&
          trailerBox.max.x > robotBox.min.x &&
          trailerBox.min.y < robotBox.max.y &&
@@ -443,19 +488,14 @@ function checkCollisions() {
          trailerBox.max.z > robotBox.min.z;
 }
 
+function checkCollisions() {
+  return isColliding() && robotOnTruckForm();
+}
+
 ///////////////////////
 /* HANDLE COLLISIONS */
 ///////////////////////
 function handleCollisions() {
-  const foot1 = leftLeg.getObjectByName("foot");
-  const foot2 = rightLeg.getObjectByName("foot");
-
-  LegRotation(leftLeg, rightLeg);
-  footRotation(foot1, foot2);
-  headRetraction(head);
-  
-  state.armOutward = true;
-  armTranslation(leftArm, rightArm);
 
   if (trailer.position.x < colisionPosition.x) {
     trailer.position.x += trailerSpeed;
@@ -606,6 +646,7 @@ function animate() {
   update();
   
   if (checkCollisions()) {
+    console.log("Collision detected!");
     state.isColliding = true;
     handleCollisions();
   } else {
