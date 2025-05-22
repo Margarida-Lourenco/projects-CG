@@ -275,6 +275,15 @@ function createUFO() {
     const ufoBeamLight = new THREE.SpotLight(0x00ff33, 5,  -UFO_ALTITUDE, Math.PI / 12, 1, 0.4); // color, intensity, distance, angle, penumbra, decay
     ufoBeamMesh.position.y = - (bodyRadius * bodyFlattening) / 2 - beamHeight / 2 + (bodyRadius * bodyFlattening * 0.5); // Position beam bottom at the body's bottom edge
     ufoBeamLight.position.set(0, 0, 0); 
+    ufoBeamLight.castShadow = true; // Enable shadow casting
+    
+    // Necessary to move beam with UFO
+    const beamLightTarget = new THREE.Object3D();
+    beamLightTarget.position.set(0, -UFO_ALTITUDE, 0); // Terrain will always be slightly higher than ALT value
+    ufoBeamLight.target = beamLightTarget; 
+    ufoBeamMesh.add(beamLightTarget); // Add target to the beam mesh
+
+
 
     ufoBeamMesh.add(ufoBeamLight); 
     
