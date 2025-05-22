@@ -1,17 +1,18 @@
 import * as THREE from 'three';
 
-// Default texture dimensions (e.g., for floral field)
 const DEFAULT_TEXTURE_WIDTH = 512;
 const DEFAULT_TEXTURE_HEIGHT = 512;
 
 /**
  * Generates a procedural texture representing a floral field.
- * @returns {THREE.CanvasTexture} The generated texture.
+ * @returns {THREE.CanvasTexture} The generated texture. 
+ * @param {number} width - The width of the texture in pixels. Default is 512.
+ * @param {number} height - The height of the texture in pixels. Default is 512.
  */
-export function createFloralFieldTexture() {
+export function createFloralFieldTexture(width = DEFAULT_TEXTURE_WIDTH, height = DEFAULT_TEXTURE_HEIGHT) {
     const canvas = document.createElement('canvas');
-    canvas.width = DEFAULT_TEXTURE_WIDTH;
-    canvas.height = DEFAULT_TEXTURE_HEIGHT;
+    canvas.width = width;
+    canvas.height = height;
     const context = canvas.getContext('2d');
 
     // Background
@@ -40,29 +41,35 @@ export function createFloralFieldTexture() {
 /**
  * Generates a procedural texture representing a starry sky.
  * @returns {THREE.CanvasTexture} The generated texture.
+ * @param {number} width - The width of the texture in pixels. Default is 512.
+ * @param {number} height - The height of the texture in pixels. Default is 512.
+ * @param {number} stars - The number of stars to generate.
  */
-export function createStarrySkyTexture() {
-    const STARRY_SKY_TEXTURE_WIDTH = 2048; // Increased resolution for stars
-    const STARRY_SKY_TEXTURE_HEIGHT = 2048; // Increased resolution for stars
-
+export function createStarrySkyTexture(
+        width = DEFAULT_TEXTURE_WIDTH, 
+        height = DEFAULT_TEXTURE_HEIGHT, 
+        stars = 800,
+        minStarSize = 0.5, // Minimum star size
+        starVariation = 0.2 // Variation in star size
+    ) {
     const canvas = document.createElement('canvas');
-    canvas.width = STARRY_SKY_TEXTURE_WIDTH;
-    canvas.height = STARRY_SKY_TEXTURE_HEIGHT;
+    canvas.width = width;
+    canvas.height = height;
     const context = canvas.getContext('2d');
 
     // Background gradient
-    const gradient = context.createLinearGradient(0, 0, 0, STARRY_SKY_TEXTURE_HEIGHT);
+    const gradient = context.createLinearGradient(0, 0, 0, height);
     gradient.addColorStop(0, 'darkblue');
     gradient.addColorStop(1, '#4B0082'); // Dark violet
     context.fillStyle = gradient;
-    context.fillRect(0, 0, STARRY_SKY_TEXTURE_WIDTH, STARRY_SKY_TEXTURE_HEIGHT);
+    context.fillRect(0, 0, width, height);
 
-    const numStars = 2800; // Increased number of stars for higher resolution
-    for (let i = 0; i < numStars; i++) {
-        const x = Math.random() * STARRY_SKY_TEXTURE_WIDTH;
-        const y = Math.random() * STARRY_SKY_TEXTURE_HEIGHT;
+    for (let i = 0; i < stars; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
         // Adjusted star radius for higher res texture, aiming for small, sharp points
-        const radius = Math.random() * 1.25 + 0.75; // Stars of 0.75 to 2.0 pixels radius
+        // Stars of 1 to 2 pixels radius (at 512x512 texture size, scales with size)
+        const radius = (Math.random() * minStarSize + starVariation) * Math.sqrt((width * height) / (DEFAULT_TEXTURE_WIDTH * DEFAULT_TEXTURE_HEIGHT));
 
         context.beginPath();
         context.arc(x, y, radius, 0, Math.PI * 2);

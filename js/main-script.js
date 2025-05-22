@@ -12,7 +12,7 @@ const UFO_ROTATION_SPEED = 0.02; // radians per frame
 const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibility)
 let keyStates = {}; // To store the state of pressed keys
 
-const debugFlag = false; // Set to true to enable scene helpers
+const debugFlag = true; // Set to true to enable scene helpers
 
 const TERRAIN_WIDTH = 3560; 
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
@@ -20,9 +20,20 @@ const TERRAIN_SEGMENTS_WIDTH = 500; // Number of segments in the width
 const TERRAIN_SEGMENTS_HEIGHT = TERRAIN_SEGMENTS_WIDTH; 
 const TERRAIN_TEXTURE_WIDTH_IN_WORLD = 100 // Size of texture in units
 const TERRAIN_TEXTURE_HEIGHT_IN_WORLD = TERRAIN_TEXTURE_WIDTH_IN_WORLD // Size of texture in units
-const HEIGHTMAP_SCALE = 100;
-const SKYDOME_SCALE = 0.5; // Radius as percentage of terrain width
+const HEIGHTMAP_SCALE = 200;
 const HEIGHTMAP_AREA_SELECTION_RATIO = 1; // Value between 0 (exclusive) and 1 (inclusive). 1 = full image, 0.5 = half area.
+
+const MOON_SCALE = 0.025; // Radius as percentage of terrain width
+const SKYDOME_SCALE = 0.5; // Radius as percentage of terrain width
+const MOON_ALTITUDE = 1 * Math.PI / 6; // Angle of moon above terrain relative to XZ plane
+const MOON_ANGLE = -1 * Math.PI / 3; // Angle of moon in radians relative to x axis
+
+const NUM_STARS = 800; // Number of stars in the starry sky texture
+const STAR_SIZE = 0.5; // Minimum star size
+const STAR_VARIATION = 0.2; // Variation in star size
+const SKY_TEXTURE_WIDTH = 4096 * 2; // Width of the starry sky texture
+const SKY_TEXTURE_HEIGHT = SKY_TEXTURE_WIDTH; // Height of the starry sky texture
+
 const UFO_ALTITUDE = 200; // Height of UFO above terrain
 // Original heightmap was 17.8km wide, so 0.2 = 3.56km wide
 // Original size * Scale / Width = IRL Meters per unit
@@ -33,6 +44,7 @@ function init() {
     if (debugFlag) {
             const axesHelper = new THREE.AxesHelper(1000);
             scene.add(axesHelper);
+            //grid is currently slightly misaligned with the texture repetition pattern
             const gridHelper = new THREE.GridHelper(TERRAIN_WIDTH, TERRAIN_WIDTH / TERRAIN_TEXTURE_WIDTH_IN_WORLD);
             scene.add(gridHelper);
             axesHelper.position.set(0, 100, 0);
@@ -60,8 +72,7 @@ function init() {
         const floralTexture = createFloralFieldTexture();
         floralTexture.wrapS = THREE.RepeatWrapping;
         floralTexture.wrapT = THREE.RepeatWrapping;
-        floralTexture.repeat.set(TERRAIN_WIDTH * 2.5, TERRAIN_WIDTH * 2.5); // e.g., 2500x2500 if TERRAIN_WIDTH is 1000
-
+        floralTexture.repeat.set(TERRAIN_WIDTH / TERRAIN_TEXTURE_WIDTH_IN_WORLD, TERRAIN_HEIGHT / TERRAIN_TEXTURE_HEIGHT_IN_WORLD); // Adjusted to match terrain size
         createTerrain(heightmapTexture, floralTexture);
         createSkydome(); 
     }, undefined, function (error) {
@@ -174,7 +185,7 @@ function createSkydome() {
     // Invert geometry on the x-axis so that faces point inward
     skydomeGeometry.scale(1, 1, 1);
 
-    const starrySkyTexture = createStarrySkyTexture();
+    const starrySkyTexture = createStarrySkyTexture(SKY_TEXTURE_WIDTH, SKY_TEXTURE_HEIGHT, NUM_STARS, STAR_SIZE, STAR_VARIATION);
 
     const skydomeMaterial = new THREE.MeshBasicMaterial({
         map: starrySkyTexture,
@@ -187,7 +198,7 @@ function createSkydome() {
 }
 
 function createMoon() {
-    const moonRadius = TERRAIN_WIDTH * 0.025; // Moon size relative to terrain
+    const moonRadius = TERRAIN_WIDTH * MOON_SCALE; // Moon size relative to terrain
     const moonGeometry = new THREE.SphereGeometry(moonRadius, 32, 32);
     const moonMaterial = new THREE.MeshStandardMaterial({
         color: 0xffffff,
@@ -198,17 +209,19 @@ function createMoon() {
     });
     moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
     // Position moon on the surface of the skydome sphere
-    const currentDirX = 0.2;
-    const currentDirY = 0.3;
-    const currentDirZ = -0.4;
+    const currentDirX = Math.cos(MOON_ANGLE) ;
+    const currentDirY = Math.sin(MOON_ALTITUDE);
+    const currentDirZ = Math.sin(MOON_ANGLE); // Altitude is the angle from the center of the sphere
     const currentDirMagnitude = Math.sqrt(currentDirX*currentDirX + currentDirY*currentDirY + currentDirZ*currentDirZ);
-
+    console.log("Current direction vector: ", currentDirX, currentDirY, currentDirZ);
+    
     const scaleToSkydome = SKYDOME_SCALE / currentDirMagnitude;
 
     moonMesh.position.set(
-        TERRAIN_WIDTH * currentDirX * scaleToSkydome - moonRadius / 2,
-        TERRAIN_WIDTH * currentDirY * scaleToSkydome - moonRadius / 2,
-        TERRAIN_WIDTH * currentDirZ * scaleToSkydome + moonRadius,
+        // Distance from center of skydome minus or plus moon radius to avoid clipping, with edge case for k Pi / 2 anles
+        TERRAIN_WIDTH * currentDirX * scaleToSkydome - (currentDirX * moonRadius),
+        TERRAIN_WIDTH * currentDirY * scaleToSkydome - (currentDirY * moonRadius),  //Y always > 0 hopefully :P
+        TERRAIN_WIDTH * currentDirZ * scaleToSkydome - (currentDirZ * moonRadius),
     );
     scene.add(moonMesh);
     console.log("Moon created and positioned on skydome surface.");
@@ -285,7 +298,7 @@ function createUFO() {
     ufoBeamMesh.position.y = - (bodyRadius * bodyFlattening) / 2 - beamHeight / 2 + (bodyRadius * bodyFlattening * 0.5); // Position beam bottom at the body's bottom edge
     ufoBeamLight.position.set(0, 0, 0); 
     ufoBeamLight.castShadow = true; // Enable shadow casting
-    
+
     // Necessary to move beam with UFO
     const beamLightTarget = new THREE.Object3D();
     beamLightTarget.position.set(0, -UFO_ALTITUDE, 0); // Terrain will always be slightly higher than ALT value

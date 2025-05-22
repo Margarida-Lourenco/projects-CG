@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createFloralFieldTexture, createStarrySkyTexture } from 'js/procedural-textures.js';
+import { createFloralFieldTexture, createStarrySkyTexture } from './procedural-textures.js';
 
 let scene, camera, renderer;
 let textureCanvas, textureContext;
@@ -48,15 +48,15 @@ function init() {
 }
 
 function displayFloralFieldTexture() {
-    console.log("Displaying Floral Field Texture (Key '1')");
-    const floralTexture = createFloralFieldTexture();
+    console.log("Generating and displaying Floral Field Texture (Key '1')");
+    const floralTexture = createFloralFieldTexture(512, 512);
     planeMaterial.map = floralTexture;
     planeMaterial.map.needsUpdate = true;
 }
 
 function displayStarrySkyTexture() {
-    console.log("Displaying Starry Sky Texture (Key '2')");
-    const starryTexture = createStarrySkyTexture();
+    console.log("Generating and displaying Starry Sky Texture (Key '2')");
+    const starryTexture = createStarrySkyTexture(TEXTURE_WIDTH*8, TEXTURE_HEIGHT*8, 1600);
     planeMaterial.map = starryTexture;
     planeMaterial.map.needsUpdate = true;
 }
@@ -64,12 +64,10 @@ function displayStarrySkyTexture() {
 function onKeyDown(event) {
     switch (event.key) {
         case '1':
-            // generateFloralFieldTexture(); // Old call
             displayFloralFieldTexture();
             break;
         case '2':
-            // generateStarrySkyTexture(); // Old call
-            displayStarrySkyTexture();
++           displayStarrySkyTexture();
             break;
     }
 }
