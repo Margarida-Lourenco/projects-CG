@@ -174,14 +174,12 @@ function createWaist() {
   const waist = new THREE.Object3D();
 
   // Parte 1: bumper
-  const bumperGeometry = new THREE.BoxGeometry(5, 10, 35);
-  const bumper = new THREE.Mesh(bumperGeometry, materials.grey);
+  const bumper = new THREE.Mesh(new THREE.BoxGeometry(5, 10, 35), materials.grey);
   bumper.position.set(5, 0, 0); 
   waist.add(bumper);
 
   // Parte 2: base
-  const baseGeometry = new THREE.BoxGeometry(10, 10, 25);
-  const base = new THREE.Mesh(baseGeometry, materials.grey);
+  const base = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 25), materials.grey);
   base.position.set(-2.5, 0, 0);
   waist.add(base);
 
@@ -202,10 +200,9 @@ function createWaist() {
 }
 
 function createWheel(){
-    const geometry = new THREE.CylinderGeometry(6, 6, 5, 16);
-    const wheel = new THREE.Mesh(geometry, materials.black);
-    wheel.rotation.x = Math.PI / 2;
-    return wheel;
+  const wheel = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 5, 16), materials.black);
+  wheel.rotation.x = Math.PI / 2;
+  return wheel;
 }
 
 function createBody() {
@@ -234,72 +231,72 @@ function createShoulders() {
 }
 
 function createHead() {
-      const head = new THREE.Object3D();
+  const head = new THREE.Object3D();
 
-      const face = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 10, 32), materials.blue);
+  const face = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 10, 32), materials.blue);
 
-      const antennaR = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 5, 32), materials.blue);
-      antennaR.position.set(
-        0,
-        (face.geometry.parameters.height + antennaR.geometry.parameters.height) / 2,
-        4.5
-      );
+  const antennaR = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 5, 32), materials.blue);
+  antennaR.position.set(
+    0,
+    (face.geometry.parameters.height + antennaR.geometry.parameters.height) / 2,
+    4.5
+  );
 
-      const antennaL = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 5, 32), materials.blue);
-      antennaL.position.set(
-        0,
-        (face.geometry.parameters.height + antennaL.geometry.parameters.height) / 2,
-        -4.5
-      );
+  const antennaL = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 5, 32), materials.blue);
+  antennaL.position.set(
+    0,
+    (face.geometry.parameters.height + antennaL.geometry.parameters.height) / 2,
+    -4.5
+  );
 
-      const eyeR = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2.5), materials.yellow);
-      eyeR.position.set(
-        face.geometry.parameters.radiusTop - eyeR.geometry.parameters.width / 2, // Face of eye intersects with tangent of face
-        (face.geometry.parameters.height / 6), // 2/3rds of face height
-        -eyeR.geometry.parameters.depth //Eyes have an eye width between them
-      );
+  const eyeR = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2.5), materials.yellow);
+  eyeR.position.set(
+    face.geometry.parameters.radiusTop - eyeR.geometry.parameters.width / 2, // Face of eye intersects with tangent of face
+    (face.geometry.parameters.height / 6), // 2/3rds of face height
+    -eyeR.geometry.parameters.depth //Eyes have an eye width between them
+  );
 
-      const eyeL = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2.5), materials.yellow);
-      eyeL.position.set(
-        face.geometry.parameters.radiusTop - eyeL.geometry.parameters.width / 2,
-        (face.geometry.parameters.height / 6),
-        eyeR.geometry.parameters.depth
-      );
+  const eyeL = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2.5), materials.yellow);
+  eyeL.position.set(
+    face.geometry.parameters.radiusTop - eyeL.geometry.parameters.width / 2,
+    (face.geometry.parameters.height / 6),
+    eyeR.geometry.parameters.depth
+  );
 
-      head.add(face, antennaL, antennaR, eyeL, eyeR);
+  head.add(face, antennaL, antennaR, eyeL, eyeR);
 
-      // Shift the entire assembly upwards along local Y.
-      // This effectively lowers the pivot for rotation to the bottom of the face.
-      for (let i = 0; i < head.children.length; i++) {
-        head.children[i].position.y += face.geometry.parameters.height;
-      }
+  // Shift the entire assembly upwards along local Y.
+  // This effectively lowers the pivot for rotation to the bottom of the face.
+  for (let i = 0; i < head.children.length; i++) {
+    head.children[i].position.y += face.geometry.parameters.height;
+  }
 
-      return head;
+  return head;
 }
 
 // Root of arm is middle of upper arm
 function createArm() {
-    const arm = new THREE.Object3D();
+  const arm = new THREE.Object3D();
 
-    const upper = new THREE.Mesh(new THREE.BoxGeometry(10, 15, 10), materials.red);
-    upper.position.set(0, 0, 0);
+  const upper = new THREE.Mesh(new THREE.BoxGeometry(10, 15, 10), materials.red);
+  upper.position.set(0, 0, 0);
 
-    const lower = new THREE.Mesh(new THREE.BoxGeometry(25, 10, 10), materials.red);
-    lower.position.set(
-      (lower.geometry.parameters.width - upper.geometry.parameters.width )/ 2,
-      -(lower.geometry.parameters.height + upper.geometry.parameters.height) / 2 ,
-      0
-    );
+  const lower = new THREE.Mesh(new THREE.BoxGeometry(25, 10, 10), materials.red);
+  lower.position.set(
+    (lower.geometry.parameters.width - upper.geometry.parameters.width )/ 2,
+    -(lower.geometry.parameters.height + upper.geometry.parameters.height) / 2 ,
+    0
+  );
 
-    const exhausts = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 10, 32), materials.grey);
-    exhausts.position.set(
-      0, 
-      (upper.geometry.parameters.height + exhausts.geometry.parameters.height) / 2, 
-      0);
+  const exhausts = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 10, 32), materials.grey);
+  exhausts.position.set(
+    0, 
+    (upper.geometry.parameters.height + exhausts.geometry.parameters.height) / 2, 
+    0);
 
-    arm.add(upper, lower, exhausts);
+  arm.add(upper, lower, exhausts);
 
-    return arm;
+  return arm;
 }
 
 
@@ -425,43 +422,43 @@ function createTrailer(x, y, z){
 
 
 function createRobot(x, y, z) {
-    robot = new THREE.Object3D();
-    robot.add(new THREE.AxesHelper(10));
-    
-    leftLeg = createLeg();
-    leftLeg.position.set(-2.5, 25, 7.5);
+  robot = new THREE.Object3D();
+  robot.add(new THREE.AxesHelper(10));
+  
+  leftLeg = createLeg();
+  leftLeg.position.set(-2.5, 25, 7.5);
 
-    rightLeg = createLeg();
-    rightLeg.position.set(-2.5, 25, -7.5);
-    rightLeg.scale.z = -1;
+  rightLeg = createLeg();
+  rightLeg.position.set(-2.5, 25, -7.5);
+  rightLeg.scale.z = -1;
 
-    waist = createWaist();
-    waist.position.set(0, 25, 0);
+  waist = createWaist();
+  waist.position.set(0, 25, 0);
 
-    body = createBody();
-    body.position.set(0, 25, 0);
+  body = createBody();
+  body.position.set(0, 25, 0);
 
-    shoulders = createShoulders();
-    shoulders.position.set(0, 25, 0);
+  shoulders = createShoulders();
+  shoulders.position.set(0, 25, 0);
 
-    head = createHead();
-    head.position.set(0, 50, 0);
+  head = createHead();
+  head.position.set(0, 50, 0);
 
-    leftArm = createArm();
-    leftArm.position.set(-12.5, 47.5, 22.5);
-    
-    rightArm = createArm();
-    rightArm.position.set(-12.5, 47.5, -22.5);
+  leftArm = createArm();
+  leftArm.position.set(-12.5, 47.5, 22.5);
+  
+  rightArm = createArm();
+  rightArm.position.set(-12.5, 47.5, -22.5);
 
-    robot.add(head, leftLeg, rightLeg, leftArm, rightArm, shoulders, body, waist);
-    scene.add(robot);
+  robot.add(head, leftLeg, rightLeg, leftArm, rightArm, shoulders, body, waist);
+  scene.add(robot);
 
-    robot.position.set(x, y, z);
+  robot.position.set(x, y, z);
 
-    robotBox = new THREE.Box3().setFromObject(robot);
+  robotBox = new THREE.Box3().setFromObject(robot);
 
-    const boxHelper = new THREE.Box3Helper(robotBox, 0xffff00);
-    scene.add(boxHelper);
+  const boxHelper = new THREE.Box3Helper(robotBox, 0xffff00);
+  scene.add(boxHelper);
 }
 
 //////////////////////
