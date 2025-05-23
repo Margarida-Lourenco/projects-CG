@@ -554,21 +554,22 @@ function collisionSide() {
 ///////////////////////
 
 function handleCollisions() {
+  let collision = isColliding();
   // Starts the attachment animation
-  if (!state.trailerAttached && robotOnTruckForm() && isColliding() && !state.attaching) {
+  if (!state.trailerAttached && robotOnTruckForm() && collision && !state.attaching) {
     console.log("Collision detected! Starting attachment animation.");
     state.attaching = true;
   }
 
   // detaches the trailer
-  else if (state.trailerAttached && !isColliding()) {
+  else if (state.trailerAttached && !collision) {
     console.log("Detached from trailer.");
     state.trailerAttached = false;
     state.attaching = false;
   }
 
   // Collision when robot is not in truck form
-  else if (!state.trailerAttached && isColliding()) {
+  else if (!state.trailerAttached && collision) {
     if (state.direction === "up") {
       trailer.position.addScaledVector(directions.down, trailerSpeed);
     }
@@ -658,8 +659,6 @@ function update() {
     const direction = new THREE.Vector3().subVectors(state.attachTarget, trailer.position);
     const distance = direction.length();
 
-
-
     if (distance < state.attachSpeed) {
       trailer.position.copy(state.attachTarget);
       state.attaching = false;
@@ -692,7 +691,6 @@ function update() {
     return;
   }
   
-
   // Trailer's movements
   if (!state.trailerAttached) {
     // Trailer movement when not attached
