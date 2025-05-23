@@ -46,6 +46,7 @@ let state = {
   attaching: false,
   attachTarget: new THREE.Vector3(-50, 47.5, 0), // Position of the trailer when attached
   attachSpeed: 1, 
+  direction:"",
 };
 
 
@@ -520,7 +521,18 @@ function handleCollisions() {
 
   // Collision when robot is not in truck form
   else if (!state.trailerAttached && isColliding()) {
-    trailer.position.addScaledVector(directions.left, trailerSpeed);
+    if (state.direction === "up") {
+      trailer.position.addScaledVector(directions.down, trailerSpeed);
+    }
+    if (state.direction === "down") {
+      trailer.position.addScaledVector(directions.up, trailerSpeed);
+    }
+    if (state.direction === "left") {
+      trailer.position.addScaledVector(directions.right, trailerSpeed);
+    }
+    if (state.direction === "right") {
+      trailer.position.addScaledVector(directions.left, trailerSpeed);
+    }
   }
   
 }
@@ -608,20 +620,25 @@ function update() {
     // Trailer movement when not attached
     if (state.up) {
       trailer.position.addScaledVector(directions.up, trailerSpeed);
+      state.direction = "up";
     }
     if (state.down) {
       trailer.position.addScaledVector(directions.down, trailerSpeed);
+      state.direction = "down";
     }
     if (state.left) {
       trailer.position.addScaledVector(directions.left, trailerSpeed);
+      state.direction = "left";
     }
     if (state.right) {
       trailer.position.addScaledVector(directions.right, trailerSpeed);
+      state.direction = "right";
     }
   } else {
     // Trailer movement when attached
     if (state.left) {
       trailer.position.addScaledVector(directions.left, trailerSpeed);
+      state.direction = "left";
     }
   }
 
