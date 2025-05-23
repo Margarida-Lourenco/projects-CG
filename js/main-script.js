@@ -1,8 +1,4 @@
 import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { VRButton } from "three/addons/webxr/VRButton.js";
-import * as Stats from "three/addons/libs/stats.module.js";
-import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 
 //////////////////////
 /* GLOBAL VARIABLES */
@@ -85,7 +81,7 @@ const armTranslationLimit = 10;
 const maxHeadRotation = Math.PI / 2;
 const minHeadRotation = 0;
 
-const debugFlag = true; // Set to true to enable debug helpers
+const debugFlag = false; // Set to true to enable debug helpers
 
 /////////////////////
 /* CREATE SCENE(S) */
@@ -514,7 +510,6 @@ function robotOnTruckForm() {
 }
 
 function isColliding() {
-  const dir = collisionSide();
   return trailerBox.min.x < robotBox.max.x &&
     trailerBox.max.x > robotBox.min.x &&
     trailerBox.min.y < robotBox.max.y &&
@@ -555,13 +550,11 @@ function handleCollisions() {
   let collision = isColliding();
   // Starts the attachment animation
   if (!state.trailerAttached && robotOnTruckForm() && collision && !state.attaching) {
-    console.log("Collision detected! Starting attachment animation.");
     state.attaching = true;
   }
 
   // detaches the trailer
   else if (state.trailerAttached && !collision) {
-    console.log("Detached from trailer.");
     state.trailerAttached = false;
     state.attaching = false;
   }
@@ -650,7 +643,6 @@ function update() {
   if (side != undefined) {
     state.position = side;
   }
-  console.log("State.position" + state.position + "side" + side);
 
   // Trailer movement
   if (state.attaching) {
@@ -666,21 +658,17 @@ function update() {
       if ((state.position[0] != -1 || state.position[1] != 0) && !state.alligned) { // Trailer is not behind the robot
         if (state.position[0] === 1) { // Trailer is in front of the robot
           trailer.position.addScaledVector(directions.up.normalize(), state.attachSpeed / 2);
-          console.log("Moving up");
         } else
         if (state.position[1] != 0) { // Trailer is not alligned with robot on the Y axis
           if (state.position[0] != -1) { // Trailer is not aligned with the robot on the X axis
             trailer.position.addScaledVector(directions.left.normalize(), state.attachSpeed / 2);
-            console.log("Moving left");
           } else
           if (state.position[0] === -1) { // Trailer is somewhere behind the robot
             trailer.position.addScaledVector(directions.down.normalize(), state.attachSpeed * state.position[1] / 2);
-            console.log("Moving vertically");
           }
         }
       } else {
         state.alligned = true;
-        console.log("Moving towards the robot");
         direction.normalize();
         trailer.position.addScaledVector(direction, state.attachSpeed);
       }
