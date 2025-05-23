@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { VRButton } from "three/addons/webxr/VRButton.js";
 import * as Stats from "three/addons/libs/stats.module.js";
-import { GUI } from "three/addons/libs/lil-gui.module.min.js"; 
+import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 
 //////////////////////
 /* GLOBAL VARIABLES */
@@ -33,11 +33,11 @@ let state = {
   legsBackward: false,
 
   feetBackward: false,
-  feetForward: false, 
+  feetForward: false,
 
-  armOutward: false, 
-  armInward: false,  
-  armTranslation: 0, 
+  armOutward: false,
+  armInward: false,
+  armTranslation: 0,
 
   headBackward: false,
   headForward: false,
@@ -45,8 +45,8 @@ let state = {
   trailerAttached: false,
   attaching: false,
   attachTarget: new THREE.Vector3(-50, 47.5, 0), // Position of the trailer when attached
-  attachSpeed: 1, 
-  direction:"",
+  attachSpeed: 1,
+  direction: "",
 };
 
 
@@ -71,15 +71,15 @@ const directions = {
 
 const rotationSpeed = Math.PI / 288;
 const trailerSpeed = 0.5;
-const armTranslationSpeed = 0.08; 
+const armTranslationSpeed = 0.08;
 
-const maxLegRotation = 0; 
+const maxLegRotation = 0;
 const minLegRotation = -Math.PI / 2;
 
-const maxFootRotation = 0; 
+const maxFootRotation = 0;
 const minFootRotation = -Math.PI / 2;
 
-const armTranslationLimit = 10; 
+const armTranslationLimit = 10;
 
 const maxHeadRotation = Math.PI / 2;
 const minHeadRotation = 0;
@@ -98,7 +98,7 @@ function createScene() {
 //////////////////////
 /* CREATE CAMERA(S) */
 //////////////////////
-function createCamera() { 
+function createCamera() {
   let persCamera;
 
   // Perspective camera
@@ -175,7 +175,7 @@ function createWaist() {
 
   // Parte 1: bumper
   const bumper = new THREE.Mesh(new THREE.BoxGeometry(5, 10, 35), materials.grey);
-  bumper.position.set(5, 0, 0); 
+  bumper.position.set(5, 0, 0);
   waist.add(bumper);
 
   // Parte 2: base
@@ -186,20 +186,20 @@ function createWaist() {
   const wheel1 = createWheel();
   const wheel2 = createWheel();
   wheel1.position.set(
-    -5, 
-    -base.geometry.parameters.height / 4, 
+    -5,
+    -base.geometry.parameters.height / 4,
     (wheel1.geometry.parameters.height + base.geometry.parameters.depth) / 2);
 
   wheel2.position.set(
-    -5, 
+    -5,
     -base.geometry.parameters.height / 4,
     - (wheel2.geometry.parameters.height + base.geometry.parameters.depth) / 2);
-    
+
   waist.add(wheel1, wheel2);
   return waist;
 }
 
-function createWheel(){
+function createWheel() {
   const wheel = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 5, 16), materials.black);
   wheel.rotation.x = Math.PI / 2;
   return wheel;
@@ -283,15 +283,15 @@ function createArm() {
 
   const lower = new THREE.Mesh(new THREE.BoxGeometry(25, 10, 10), materials.red);
   lower.position.set(
-    (lower.geometry.parameters.width - upper.geometry.parameters.width )/ 2,
-    -(lower.geometry.parameters.height + upper.geometry.parameters.height) / 2 ,
+    (lower.geometry.parameters.width - upper.geometry.parameters.width) / 2,
+    -(lower.geometry.parameters.height + upper.geometry.parameters.height) / 2,
     0
   );
 
   const exhausts = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 10, 32), materials.grey);
   exhausts.position.set(
-    0, 
-    (upper.geometry.parameters.height + exhausts.geometry.parameters.height) / 2, 
+    0,
+    (upper.geometry.parameters.height + exhausts.geometry.parameters.height) / 2,
     0);
 
   arm.add(upper, lower, exhausts);
@@ -301,7 +301,7 @@ function createArm() {
 
 
 function createLeg() {
-  const leg = new THREE.Object3D(); 
+  const leg = new THREE.Object3D();
   const Yoffset = -10; // Offset to position the leg pivot corectly 
   const wheelGroupOffset = -2; // Vertical offset of the wheel group
   const wheelGap = 2.5; // Gap between the surface of the wheels
@@ -311,7 +311,7 @@ function createLeg() {
 
   const calf = new THREE.Mesh(
     new THREE.BoxGeometry(10, 35, 10), materials.blue);
-  calf.position.y =  -(calf.geometry.parameters.height / 2) - thigh.geometry.parameters.height / 2;
+  calf.position.y = -(calf.geometry.parameters.height / 2) - thigh.geometry.parameters.height / 2;
 
 
   const footGeometry = new THREE.BoxGeometry(15, 5, 15); // width, height, depth
@@ -321,23 +321,23 @@ function createLeg() {
 
   const foot = new THREE.Mesh(footGeometry, materials.blue);
   foot.name = "foot";
-  foot.position.set( - (calf.geometry.parameters.width / 4), 
-    -(calf.geometry.parameters.height) - (thigh.geometry.parameters.height) + (foot.geometry.parameters.height / 2), 
-      (calf.geometry.parameters.width / 4));
+  foot.position.set(- (calf.geometry.parameters.width / 4),
+    -(calf.geometry.parameters.height) - (thigh.geometry.parameters.height) + (foot.geometry.parameters.height / 2),
+    (calf.geometry.parameters.width / 4));
 
-  
+
   const wheel1 = createWheel();
   const wheel2 = createWheel();
 
 
   wheel1.position.set(
-    calf.geometry.parameters.depth / 4, 
-    calf.position.y + wheelGroupOffset - ((wheelGap / 2) + wheel2.geometry.parameters.radiusTop), 
+    calf.geometry.parameters.depth / 4,
+    calf.position.y + wheelGroupOffset - ((wheelGap / 2) + wheel2.geometry.parameters.radiusTop),
     (calf.geometry.parameters.width + wheel1.geometry.parameters.height) / 2
   );
   wheel2.position.set(
-    calf.geometry.parameters.depth / 4, 
-    calf.position.y + wheelGroupOffset + ((wheelGap / 2) + wheel2.geometry.parameters.radiusTop), 
+    calf.geometry.parameters.depth / 4,
+    calf.position.y + wheelGroupOffset + ((wheelGap / 2) + wheel2.geometry.parameters.radiusTop),
     (calf.geometry.parameters.width + wheel1.geometry.parameters.height) / 2);
 
   leg.add(thigh, calf, foot, wheel1, wheel2);
@@ -350,7 +350,7 @@ function createLeg() {
   return leg;
 }
 
-function createTrailer(x, y, z){
+function createTrailer(x, y, z) {
   trailer = new THREE.Object3D();
   trailer.add(new THREE.AxesHelper(10));
 
@@ -361,18 +361,18 @@ function createTrailer(x, y, z){
 
   box.position.set(0, 0, 0);
   connectPiece.position.set(
-    box.geometry.parameters.width / 2 - connectPiece.geometry.parameters.width,  
-    - (box.geometry.parameters.height + connectPiece.geometry.parameters.height) / 2, 
+    box.geometry.parameters.width / 2 - connectPiece.geometry.parameters.width,
+    - (box.geometry.parameters.height + connectPiece.geometry.parameters.height) / 2,
     0);
-  
+
   const wheelGap = 2.5; // Gap between the surface of the wheels
   const wheelGroupOffset = 8; // Vertical offset of the wheel group to the end of the trailer
-  
+
   let twheelRR = createWheel(); // Right rear
   let twheelLR = createWheel(); // Left rear
   let twheelFR = createWheel(); // Right front
   let twheelFL = createWheel(); // Left front
-  
+
   twheelRR.position.set(
     -box.geometry.parameters.width / 2 + twheelRR.geometry.parameters.radiusTop + wheelGroupOffset,
     - (box.geometry.parameters.height / 2) - (wheelSupportR.geometry.parameters.height) + wheelGap,
@@ -386,13 +386,13 @@ function createTrailer(x, y, z){
   );
 
   twheelFR.position.set(
-    -box.geometry.parameters.width / 2 + twheelFR.geometry.parameters.radiusTop + wheelGroupOffset + 2*twheelFR.geometry.parameters.radiusTop + wheelGap,
+    -box.geometry.parameters.width / 2 + twheelFR.geometry.parameters.radiusTop + wheelGroupOffset + 2 * twheelFR.geometry.parameters.radiusTop + wheelGap,
     - (box.geometry.parameters.height / 2) - (wheelSupportR.geometry.parameters.height) + wheelGap,
     (box.geometry.parameters.depth - twheelFR.geometry.parameters.height) / 2
   );
 
   twheelFL.position.set(
-    -box.geometry.parameters.width / 2 + twheelFL.geometry.parameters.radiusTop + wheelGroupOffset + 2*twheelFL.geometry.parameters.radiusTop + wheelGap,
+    -box.geometry.parameters.width / 2 + twheelFL.geometry.parameters.radiusTop + wheelGroupOffset + 2 * twheelFL.geometry.parameters.radiusTop + wheelGap,
     - (box.geometry.parameters.height / 2) - (wheelSupportL.geometry.parameters.height) + wheelGap,
     - (box.geometry.parameters.depth - twheelFL.geometry.parameters.height) / 2
   );
@@ -412,9 +412,9 @@ function createTrailer(x, y, z){
   trailer.add(box, twheelRR, twheelLR, twheelFL, twheelFR, connectPiece, wheelSupportL, wheelSupportR);
 
   trailer.position.set(x, y, z);
-  
+
   trailerBox = new THREE.Box3().setFromObject(trailer);
-  
+
   const boxHelper = new THREE.Box3Helper(trailerBox, 0xffff00);
   scene.add(boxHelper);
   scene.add(trailer);
@@ -424,7 +424,7 @@ function createTrailer(x, y, z){
 function createRobot(x, y, z) {
   robot = new THREE.Object3D();
   robot.add(new THREE.AxesHelper(10));
-  
+
   leftLeg = createLeg();
   leftLeg.position.set(-2.5, 25, 7.5);
 
@@ -446,7 +446,7 @@ function createRobot(x, y, z) {
 
   leftArm = createArm();
   leftArm.position.set(-12.5, 47.5, 22.5);
-  
+
   rightArm = createArm();
   rightArm.position.set(-12.5, 47.5, -22.5);
 
@@ -496,7 +496,7 @@ function isHeadatMaxRotation() {
   const rotDirection = state.headForward ? -rotationSpeed : rotationSpeed;
   const targetRot = head.rotation.z + rotDirection;
   if (rotDirection > 0) {
-    return targetRot >= maxHeadRotation; 
+    return targetRot >= maxHeadRotation;
   } else {
     return targetRot <= minHeadRotation;
   }
@@ -504,18 +504,18 @@ function isHeadatMaxRotation() {
 
 function robotOnTruckForm() {
   return areLegsAtMaxRotation() &&
-         areFeetAtMaxRotation() &&
-         isHeadatMaxRotation()  &&
-         areArmsAtMaxTranslation()
+    areFeetAtMaxRotation() &&
+    isHeadatMaxRotation() &&
+    areArmsAtMaxTranslation()
 }
 
 function isColliding() {
   return trailerBox.min.x < robotBox.max.x &&
-         trailerBox.max.x > robotBox.min.x &&
-         trailerBox.min.y < robotBox.max.y &&
-         trailerBox.max.y > robotBox.min.y &&
-         trailerBox.min.z < robotBox.max.z &&
-         trailerBox.max.z > robotBox.min.z;
+    trailerBox.max.x > robotBox.min.x &&
+    trailerBox.min.y < robotBox.max.y &&
+    trailerBox.max.y > robotBox.min.y &&
+    trailerBox.min.z < robotBox.max.z &&
+    trailerBox.max.z > robotBox.min.z;
 }
 
 ///////////////////////
@@ -551,7 +551,7 @@ function handleCollisions() {
       trailer.position.addScaledVector(directions.left, trailerSpeed);
     }
   }
-  
+
 }
 
 
@@ -629,7 +629,7 @@ function update() {
       trailer.position.addScaledVector(direction, state.attachSpeed);
     }
 
-    return; 
+    return;
   }
 
   // Trailer's movements
@@ -665,7 +665,7 @@ function update() {
 
   // Leg rotation
   if (leftLeg && rightLeg) {
-     LegRotation();
+    LegRotation();
   }
 
   // Foot rotation
@@ -677,7 +677,7 @@ function update() {
 
   // Head retraction
   if (head) {
-      headRetraction();
+    headRetraction();
   }
 
   // Arm translation
@@ -730,20 +730,20 @@ function animate() {
 
 function onResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
-    cameras.forEach((camera) => {
-      if (camera.isPerspectiveCamera) {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-      } else if (camera.isOrthographicCamera) {
-        const aspect = window.innerWidth / window.innerHeight;
-        const frustumSize = camera.userData.frustumSize;
-        camera.left = (-frustumSize * aspect) / 2;
-        camera.right = (frustumSize * aspect) / 2;
-        camera.top = frustumSize / 2;
-        camera.bottom = -frustumSize / 2;
-        camera.updateProjectionMatrix();
-      }
+  cameras.forEach((camera) => {
+    if (camera.isPerspectiveCamera) {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    } else if (camera.isOrthographicCamera) {
+      const aspect = window.innerWidth / window.innerHeight;
+      const frustumSize = camera.userData.frustumSize;
+      camera.left = (-frustumSize * aspect) / 2;
+      camera.right = (frustumSize * aspect) / 2;
+      camera.top = frustumSize / 2;
+      camera.bottom = -frustumSize / 2;
+      camera.updateProjectionMatrix();
     }
+  }
   );
 }
 
@@ -779,11 +779,11 @@ function onKeyDown(e) {
 
     case 65: //A
     case 97: //a
-      state.feetBackward = true; 
+      state.feetBackward = true;
       break;
     case 81: //Q
     case 113: //q
-      state.feetForward = true; 
+      state.feetForward = true;
       break;
     case 83: //S
     case 115: //s
