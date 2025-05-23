@@ -15,7 +15,7 @@ let scene;
 let renderer;
 
 let robot;
-let leftLeg, rightLeg, head, leftArm, rightArm;
+let leftLeg, rightLeg, head, leftArm, rightArm, shoulders, body, waist;
 
 let trailer;
 
@@ -170,31 +170,35 @@ function switchToCamera(cam) {
 /* CREATE OBJECT3D(S) */
 ////////////////////////
 
-function addRobotWaist(obj, x, y, z, material) {
-    const geometry = new THREE.BoxGeometry(5, 10, 35);
-    const bumper = new THREE.Mesh(geometry, material);
-    bumper.position.set(x+5, y, z);
-    obj.add(bumper);
+function createWaist() {
+  const waist = new THREE.Object3D();
 
-    const geometry2 = new THREE.BoxGeometry(10, 10, 25);
-    const base = new THREE.Mesh(geometry2, material);
-    base.position.set(x-2.5, y, z);
+  // Parte 1: bumper
+  const bumperGeometry = new THREE.BoxGeometry(5, 10, 35);
+  const bumper = new THREE.Mesh(bumperGeometry, materials.grey);
+  bumper.position.set(5, 0, 0); 
+  waist.add(bumper);
 
-    obj.add(base);
+  // Parte 2: base
+  const baseGeometry = new THREE.BoxGeometry(10, 10, 25);
+  const base = new THREE.Mesh(baseGeometry, materials.grey);
+  base.position.set(-2.5, 0, 0);
+  waist.add(base);
 
-    const wheel1 = createWheel();
-    const wheel2 = createWheel();
-    wheel1.position.set(
-      -5, 
-      25 - base.geometry.parameters.height / 4, 
-      (wheel1.geometry.parameters.height + base.geometry.parameters.depth) / 2);
+  const wheel1 = createWheel();
+  const wheel2 = createWheel();
+  wheel1.position.set(
+    -5, 
+    -base.geometry.parameters.height / 4, 
+    (wheel1.geometry.parameters.height + base.geometry.parameters.depth) / 2);
 
-    wheel2.position.set(
-      -5, 
-      25 - base.geometry.parameters.height / 4,
-      - (wheel2.geometry.parameters.height + base.geometry.parameters.depth) / 2);
+  wheel2.position.set(
+    -5, 
+    -base.geometry.parameters.height / 4,
+    - (wheel2.geometry.parameters.height + base.geometry.parameters.depth) / 2);
     
-    obj.add(wheel1, wheel2);
+  waist.add(wheel1, wheel2);
+  return waist;
 }
 
 function createWheel(){
@@ -204,18 +208,29 @@ function createWheel(){
     return wheel;
 }
 
-function addRobotBody(obj, x, y, z, material) {
-    const geometry = new THREE.BoxGeometry(15, 10, 15);
-    const body = new THREE.Mesh(geometry, material);
-    body.position.set(x, y, z);
-    obj.add(body);
+function createBody() {
+  const body = new THREE.Object3D();
+  const box = new THREE.Mesh(new THREE.BoxGeometry(15, 10, 15), materials.red);
+
+  body.add(box);
+
+  for (let i = 0; i < body.children.length; i++) {
+    body.children[i].position.y += box.geometry.parameters.height; // metade da altura (10 / 2)
+  }
+  return body;
 }
 
-function addRobotShoulders(obj, x, y, z, material) {
-    const geometry = new THREE.BoxGeometry(15, 15, 35);
-    const shoulders = new THREE.Mesh(geometry, material);
-    shoulders.position.set(x, y, z);
-    obj.add(shoulders);
+function createShoulders() {
+  const shoulders = new THREE.Object3D();
+
+  const box = new THREE.Mesh(new THREE.BoxGeometry(15, 15, 35), materials.red);
+  shoulders.add(box);
+
+  for (let i = 0; i < shoulders.children.length; i++) {
+    shoulders.children[i].position.y += box.geometry.parameters.height / 2 + box.geometry.parameters.height; // metade da altura (15 / 2)
+  }
+
+  return shoulders;
 }
 
 function createHead() {
@@ -279,7 +294,7 @@ function createArm() {
     const exhausts = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 10, 32), materials.grey);
     exhausts.position.set(
       0, 
-      (upper.geometry.parameters.height +exhausts.geometry.parameters.height) / 2, 
+      (upper.geometry.parameters.height + exhausts.geometry.parameters.height) / 2, 
       0);
 
     arm.add(upper, lower, exhausts);
@@ -420,9 +435,14 @@ function createRobot(x, y, z) {
     rightLeg.position.set(-2.5, 25, -7.5);
     rightLeg.scale.z = -1;
 
-    addRobotWaist(robot, 0, 25, 0, materials.grey);
-    addRobotBody(robot, 0, 35, 0, materials.red);
-    addRobotShoulders(robot, 0, 47.5, 0, materials.red);
+    waist = createWaist();
+    waist.position.set(0, 25, 0);
+
+    body = createBody();
+    body.position.set(0, 25, 0);
+
+    shoulders = createShoulders();
+    shoulders.position.set(0, 25, 0);
 
     head = createHead();
     head.position.set(0, 50, 0);
@@ -433,7 +453,7 @@ function createRobot(x, y, z) {
     rightArm = createArm();
     rightArm.position.set(-12.5, 47.5, -22.5);
 
-    robot.add(head, leftLeg, rightLeg, leftArm, rightArm);
+    robot.add(head, leftLeg, rightLeg, leftArm, rightArm, shoulders, body, waist);
     scene.add(robot);
 
     robot.position.set(x, y, z);
