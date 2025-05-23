@@ -10,6 +10,7 @@ import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 
 let cameras = [];
 let currentCamera = 3; // Default to perspective camera
+
 let scene;
 let renderer;
 
@@ -18,32 +19,33 @@ let leftLeg, rightLeg, head, leftArm, rightArm;
 
 let trailer;
 
-let directions = {
-  up: new THREE.Vector3(0, 1, 0),
-  down: new THREE.Vector3(0, -1, 0),
-  left: new THREE.Vector3(-1, 0, 0),
-  right: new THREE.Vector3(1, 0, 0),
-};
+// Bounding boxes for collision detection
+let robotBox;
+let trailerBox;
 
 let state = {
   up: false,
   down: false,
   left: false,
   right: false,
+
   legsForward: false,
   legsBackward: false,
+
   feetBackward: false,
   feetForward: false, 
+
   armOutward: false, 
   armInward: false,  
   armTranslation: 0, 
+
   headBackward: false,
   headForward: false,
-  isColliding: false,
+
   trailerAttached: false,
   attaching: false,
-  attachTarget: new THREE.Vector3(-50, 47.5, 0), // Posição do trailer quando encaixado
-  attachSpeed: 1, // ajusta como quiseres (mais alto = mais rápido)
+  attachTarget: new THREE.Vector3(-50, 47.5, 0), // Position of the trailer when attached
+  attachSpeed: 1, 
 };
 
 
@@ -59,6 +61,13 @@ const materials = {
   yellow: new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true }),
 };
 
+const directions = {
+  up: new THREE.Vector3(0, 1, 0),
+  down: new THREE.Vector3(0, -1, 0),
+  left: new THREE.Vector3(-1, 0, 0),
+  right: new THREE.Vector3(1, 0, 0),
+};
+
 const rotationSpeed = Math.PI / 288;
 const trailerSpeed = 0.5;
 const armTranslationSpeed = 0.08; 
@@ -68,12 +77,11 @@ const minLegRotation = -Math.PI / 2;
 
 const maxFootRotation = 0; 
 const minFootRotation = -Math.PI / 2;
+
 const armTranslationLimit = 10; 
+
 const maxHeadRotation = Math.PI / 2;
 const minHeadRotation = 0;
-
-let robotBox;
-let trailerBox;
 
 /////////////////////
 /* CREATE SCENE(S) */
@@ -189,7 +197,7 @@ function addRobotWaist(obj, x, y, z, material) {
 }
 
 function createWheel(){
-    const geometry = new THREE.CylinderGeometry(6, 6, 5, 16); // radiusTop, radiusBottom, height, radialSegments
+    const geometry = new THREE.CylinderGeometry(6, 6, 5, 16);
     const wheel = new THREE.Mesh(geometry, materials.black);
     wheel.rotation.x = Math.PI / 2;
     return wheel;
@@ -478,8 +486,8 @@ function isHeadatMaxRotation() {
 
 function robotOnTruckForm() {
   return areLegsAtMaxRotation() &&
-         areFeetAtMaxRotation()&&
-         isHeadatMaxRotation()&&
+         areFeetAtMaxRotation() &&
+         isHeadatMaxRotation()  &&
          areArmsAtMaxTranslation()
 }
 
@@ -495,6 +503,7 @@ function isColliding() {
 ///////////////////////
 /* HANDLE COLLISIONS */
 ///////////////////////
+
 function handleCollisions() {
   // Starts the attachment animation
   if (!state.trailerAttached && robotOnTruckForm() && isColliding() && !state.attaching) {
@@ -508,9 +517,13 @@ function handleCollisions() {
     state.trailerAttached = false;
     state.attaching = false;
   }
+
+  // Collision when robot is not in truck form
+  else if (!state.trailerAttached && isColliding()) {
+    trailer.position.addScaledVector(directions.left, trailerSpeed);
+  }
   
 }
-
 
 
 ////////////
@@ -529,38 +542,48 @@ function apply2ElementRotation(element1, element2, rotDirection, minRot, maxRot)
   }
 }
 
-function LegRotation(leftLeg, rightLeg) {
-  const rotDirection = state.legsForward ? rotationSpeed : -rotationSpeed;
-  apply2ElementRotation(leftLeg, rightLeg, rotDirection, minLegRotation, maxLegRotation);
-}
-
-function footRotation(foot1, foot2) {
-  const rotDirection = state.feetForward ? rotationSpeed : -rotationSpeed;
-  apply2ElementRotation(foot1, foot2, rotDirection, minFootRotation, maxFootRotation);
-}
-
-function headRetraction(head) {
-  const rotDirection = state.headForward ? -rotationSpeed : rotationSpeed;
-  if (head.rotation.z + rotDirection > minHeadRotation && head.rotation.z + rotDirection < maxHeadRotation) {
-    head.rotation.z += rotDirection;
+function LegRotation() {
+  if (state.legsForward !== state.legsBackward) {
+    const rotDirection = state.legsForward ? rotationSpeed : -rotationSpeed;
+    apply2ElementRotation(leftLeg, rightLeg, rotDirection, minLegRotation, maxLegRotation);
   }
 }
 
-function armTranslation(leftArm, rightArm) {
-  const moveOut = state.armOutward && state.armTranslation < armTranslationLimit;
-  const moveIn = state.armInward && state.armTranslation > 0;
+function footRotation(foot1, foot2) {
+  if (state.feetBackward !== state.feetForward) {
+    const rotDirection = state.feetForward ? rotationSpeed : -rotationSpeed;
+    apply2ElementRotation(foot1, foot2, rotDirection, minFootRotation, maxFootRotation);
+  }
+}
 
-  const direction = moveOut ? 1 : (moveIn ? -1 : 0);
+function headRetraction() {
+  if (state.headBackward !== state.headForward) {
+    const rotDirection = state.headForward ? -rotationSpeed : rotationSpeed;
+    if (head.rotation.z + rotDirection > minHeadRotation && head.rotation.z + rotDirection < maxHeadRotation) {
+      head.rotation.z += rotDirection;
+    }
+  }
+}
 
-  if (direction) {
-    state.armTranslation += direction * armTranslationSpeed;
-    leftArm.position.z -= direction * armTranslationSpeed;
-    rightArm.position.z += direction * armTranslationSpeed;
+function armTranslation() {
+  if (state.armOutward !== state.armInward) {
+    const moveOut = state.armOutward && state.armTranslation < armTranslationLimit;
+    const moveIn = state.armInward && state.armTranslation > 0;
+
+    const direction = moveOut ? 1 : (moveIn ? -1 : 0);
+
+    if (direction) {
+      state.armTranslation += direction * armTranslationSpeed;
+      leftArm.position.z -= direction * armTranslationSpeed;
+      rightArm.position.z += direction * armTranslationSpeed;
+    }
   }
 }
 
 function update() {
+
   updateBoundingBoxes();
+
   handleCollisions();
 
   // Trailer movement
@@ -580,8 +603,9 @@ function update() {
     return; 
   }
 
-
+  // Trailer's movements
   if (!state.trailerAttached) {
+    // Trailer movement when not attached
     if (state.up) {
       trailer.position.addScaledVector(directions.up, trailerSpeed);
     }
@@ -602,38 +626,29 @@ function update() {
   }
 
   if (!robot) {
-    return; // No robot, no more updates needed for it
-  }
-
-  if (!leftLeg || !rightLeg) {
     return;
   }
 
-  if (state.legsForward !== state.legsBackward) {
-    LegRotation(leftLeg, rightLeg);
+  // Leg rotation
+  if (leftLeg && rightLeg) {
+     LegRotation();
   }
 
   // Foot rotation
   const foot1 = leftLeg.getObjectByName("foot");
   const foot2 = rightLeg.getObjectByName("foot");
   if (foot1 && foot2) {
-    if (state.feetBackward !== state.feetForward) {
     footRotation(foot1, foot2);
-    }
   }
 
   // Head retraction
   if (head) {
-    if (state.headBackward !== state.headForward) {
-      headRetraction(head);
-    }
+      headRetraction();
   }
 
   // Arm translation
   if (leftArm && rightArm) {
-    if (state.armOutward !== state.armInward) {
-    armTranslation(leftArm, rightArm);
-    }
+    armTranslation();
   }
 
 }
@@ -641,6 +656,7 @@ function update() {
 /////////////
 /* DISPLAY */
 /////////////
+
 function render() {
   renderer.render(scene, cameras[currentCamera]);
 }
@@ -648,6 +664,7 @@ function render() {
 ////////////////////////////////
 /* INITIALIZE ANIMATION CYCLE */
 ////////////////////////////////
+
 function init() {
   renderer = new THREE.WebGLRenderer({
     antialias: true,
@@ -666,6 +683,7 @@ function init() {
 /////////////////////
 /* ANIMATION CYCLE */
 /////////////////////
+
 function animate() {
   update();
   render();
@@ -675,6 +693,7 @@ function animate() {
 ////////////////////////////
 /* RESIZE WINDOW CALLBACK */
 ////////////////////////////
+
 function onResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
     cameras.forEach((camera) => {
@@ -694,15 +713,16 @@ function onResize() {
   );
 }
 
+///////////////////////
+/* KEY DOWN CALLBACK */
+///////////////////////
+
 function swapVisualizationMode() {
   for (const material of Object.values(materials)) {
     material.wireframe = !material.wireframe;
   }
 }
 
-///////////////////////
-/* KEY DOWN CALLBACK */
-///////////////////////
 function onKeyDown(e) {
   switch (e.keyCode) {
     // switching cameras
@@ -775,6 +795,7 @@ function onKeyDown(e) {
 ///////////////////////
 /* KEY UP CALLBACK */
 ///////////////////////
+
 function onKeyUp(e) {
   switch (e.keyCode) {
     case 37: // left
