@@ -405,13 +405,13 @@ function createTrailer(x, y, z) {
   wheelSupportL.position.set(
     -box.geometry.parameters.width / 2 + wheelSupportL.geometry.parameters.width / 2 + wheelGroupOffset,
     - (box.geometry.parameters.height / 2 + wheelSupportL.geometry.parameters.height / 2),
-    (box.geometry.parameters.depth - wheelSupportL.geometry.parameters.height) / 2
+    (box.geometry.parameters.depth - wheelSupportL.geometry.parameters.height - twheelFR.geometry.parameters.height) / 2
   );
 
   wheelSupportR.position.set(
     -box.geometry.parameters.width / 2 + wheelSupportR.geometry.parameters.width / 2 + wheelGroupOffset,
     - (box.geometry.parameters.height / 2 + wheelSupportR.geometry.parameters.height / 2),
-    - (box.geometry.parameters.depth - wheelSupportR.geometry.parameters.height) / 2
+    - (box.geometry.parameters.depth - wheelSupportL.geometry.parameters.height- twheelFR.geometry.parameters.height) / 2
   );
 
   trailer.add(box, twheelRR, twheelLR, twheelFL, twheelFR, connectPiece, wheelSupportL, wheelSupportR);
