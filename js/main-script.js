@@ -40,7 +40,12 @@ let state = {
   headBackward: false,
   headForward: false,
   isColliding: false,
+  trailerAttached: false,
+  attaching: false,
+  attachTarget: new THREE.Vector3(-50, 47.5, 0), // Posição do trailer quando encaixado
+  attachSpeed: 1, // ajusta como quiseres (mais alto = mais rápido)
 };
+
 
 ///////////////
 /* CONSTANTS */
@@ -66,7 +71,6 @@ const minFootRotation = -Math.PI / 2;
 const armTranslationLimit = 10; 
 const maxHeadRotation = Math.PI / 2;
 const minHeadRotation = 0;
-const colisionPosition = (10, 0, 0);
 
 let robotBox;
 let trailerBox;
@@ -488,26 +492,26 @@ function isColliding() {
          trailerBox.max.z > robotBox.min.z;
 }
 
-function checkCollisions() {
-  return isColliding() && robotOnTruckForm();
-}
-
 ///////////////////////
 /* HANDLE COLLISIONS */
 ///////////////////////
 function handleCollisions() {
-
-  if (trailer.position.x < colisionPosition.x) {
-    trailer.position.x += trailerSpeed;
-  }
-  if (trailer.position.y < colisionPosition.y) {
-    trailer.position.y += trailerSpeed;
-  }
-  if (trailer.position.z < colisionPosition.z) {
-    trailer.position.z += trailerSpeed;
+  // Starts the attachment animation
+  if (!state.trailerAttached && robotOnTruckForm() && isColliding() && !state.attaching) {
+    console.log("Collision detected! Starting attachment animation.");
+    state.attaching = true;
   }
 
+  // detaches the trailer
+  else if (state.trailerAttached && !isColliding()) {
+    console.log("Detached from trailer.");
+    state.trailerAttached = false;
+    state.attaching = false;
+  }
+  
 }
+
+
 
 ////////////
 /* UPDATE */
@@ -557,13 +561,27 @@ function armTranslation(leftArm, rightArm) {
 
 function update() {
   updateBoundingBoxes();
+  handleCollisions();
 
-  if (state.isColliding) {
-    if (state.left) {
-      trailer.position.addScaledVector(directions.left, trailerSpeed);
-      trailer.position.x -= 1 * trailerSpeed;
+  // Trailer movement
+  if (state.attaching) {
+    const direction = new THREE.Vector3().subVectors(state.attachTarget, trailer.position);
+    const distance = direction.length();
+
+    if (distance < state.attachSpeed) {
+      trailer.position.copy(state.attachTarget);
+      state.attaching = false;
+      state.trailerAttached = true;
+    } else {
+      direction.normalize();
+      trailer.position.addScaledVector(direction, state.attachSpeed);
     }
-  } else {
+
+    return; 
+  }
+
+
+  if (!state.trailerAttached) {
     if (state.up) {
       trailer.position.addScaledVector(directions.up, trailerSpeed);
     }
@@ -575,6 +593,11 @@ function update() {
     }
     if (state.right) {
       trailer.position.addScaledVector(directions.right, trailerSpeed);
+    }
+  } else {
+    // Trailer movement when attached
+    if (state.left) {
+      trailer.position.addScaledVector(directions.left, trailerSpeed);
     }
   }
 
@@ -612,6 +635,7 @@ function update() {
     armTranslation(leftArm, rightArm);
     }
   }
+
 }
 
 /////////////
@@ -644,15 +668,6 @@ function init() {
 /////////////////////
 function animate() {
   update();
-  
-  if (checkCollisions()) {
-    console.log("Collision detected!");
-    state.isColliding = true;
-    handleCollisions();
-  } else {
-    state.isColliding = false;
-  }
-
   render();
   requestAnimationFrame(animate);
 }
