@@ -1,21 +1,7 @@
 # projects-CG
 
-## TODO
+## statements
 
-- [x] definir fundo com cor clara
-- [x] câmaras 
-- [ ] função onKeyDown 
-  - [x] Camera select
-  - [x] Modelo de Visualização
-  - [ ] Angles
-  - [ ] Deslocação do reboque
-- [x] Versão simplificada do robô
-  - [x] Cabeça
-    - [x] Olhos e Antenas
-  - [x] Braços
-  - [x] Cintura
-  - [x] Coxas e pernas
-    - [x] Simetria
-  - [x] Pés
-- [x] versão simplificada do reboque
-- [ ] colisões 
+- [Entrega B](Entrega%B/CG%2425%-%Trabalho%B%-%Enunciado.pdf)
+- [Entrega C](Entrega%C/CG%2425%-%Trabalho%C%-%Enunciado.pdf)
+
