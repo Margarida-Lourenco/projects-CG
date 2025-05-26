@@ -8,36 +8,37 @@ import { createFloralFieldTexture, createStarrySkyTexture } from './procedural-t
 let scene, camera, renderer, controls;
 let terrainMesh, moonMesh, directionalLight;
 let ufo; // stores the UFO group
-const UFO_ROTATION_SPEED = 0.02; // radians per frame
-const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibility)
 let keyStates = {}; // To store the state of pressed keys
 
-const debugFlag = false; // Set to true to enable scene helpers
+const debugFlag = true; // Set to true to enable scene helpers
 
 const TERRAIN_WIDTH = 3560; 
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
-const TERRAIN_SEGMENTS_WIDTH = 500; // Number of segments in the width
+const TERRAIN_SEGMENTS_WIDTH = 200; // Number of segments in the width. Smaller values are smoother but less detailed
 const TERRAIN_SEGMENTS_HEIGHT = TERRAIN_SEGMENTS_WIDTH; 
 const TERRAIN_TEXTURE_WIDTH_IN_WORLD = 100 // Size of texture in units
 const TERRAIN_TEXTURE_HEIGHT_IN_WORLD = TERRAIN_TEXTURE_WIDTH_IN_WORLD // Size of texture in units
 const HEIGHTMAP_SCALE = 300;
 const HEIGHTMAP_AREA_SELECTION_RATIO = 0.6; // Value between 0 (exclusive) and 1 (inclusive). 1 = full image, 0.5 = half area.
+// Original heightmap was 17.8km wide, so 0.2 = 3.56km wide
+// Original size * Scale / Width = IRL Meters per unit
 
 const MOON_SCALE = 0.025; // Radius as percentage of terrain width
 const SKYDOME_SCALE = 0.5; // Radius as percentage of terrain width
 const MOON_ALTITUDE = 1 * Math.PI / 6; // Angle of moon above terrain relative to XZ plane
 const MOON_ANGLE = -1 * Math.PI / 3; // Angle of moon in radians relative to x axis
 
-const NUM_STARS = 800; // Number of stars in the starry sky texture
-const STAR_SIZE = 0.5; // Minimum star size
-const STAR_VARIATION = 0.2; // Variation in star size
+const NUM_STARS = 8000; // Number of stars in the starry sky texture
+const STAR_SIZE = 0.1; // Minimum star size
+const STAR_VARIATION = 0.3; // Variation in star size
 const SKY_TEXTURE_WIDTH = 4096 * 2; // Width of the starry sky texture
 const SKY_TEXTURE_HEIGHT = SKY_TEXTURE_WIDTH / 2; // Mapping is 2:1
-// Avoids stretching at equator but more distortion at poles
+// Smaller height voids stretching at equator but more distortion at poles
 
 const UFO_ALTITUDE = 200; // Height of UFO above terrain
-// Original heightmap was 17.8km wide, so 0.2 = 3.56km wide
-// Original size * Scale / Width = IRL Meters per unit
+const UFO_ROTATION_SPEED = 0.02; // radians per frame
+const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibility)
+
 
 function init() {
     scene = new THREE.Scene();
