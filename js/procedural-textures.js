@@ -69,7 +69,7 @@ export function createStarrySkyTexture(
         const y = Math.random() * height;
         // Adjusted star radius for higher res texture, aiming for small, sharp points
         // Stars of 1 to 2 pixels radius (at 512x512 texture size, scales with size)
-        const radius = (Math.random() * minStarSize + starVariation) * Math.sqrt((width * height) / (DEFAULT_TEXTURE_WIDTH * DEFAULT_TEXTURE_HEIGHT));
+        const radius = (Math.random() * starVariation + minStarSize ) * Math.sqrt((width * height) / (DEFAULT_TEXTURE_WIDTH * DEFAULT_TEXTURE_HEIGHT));
 
         context.beginPath();
         context.arc(x, y, radius, 0, Math.PI * 2);
