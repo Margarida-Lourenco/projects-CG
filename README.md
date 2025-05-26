@@ -2,6 +2,6 @@
 
 ## statements
 
-- [Entrega B](Entrega%B/CG%2425%-%Trabalho%B%-%Enunciado.pdf)
-- [Entrega C](Entrega%C/CG%2425%-%Trabalho%C%-%Enunciado.pdf)
+- [Entrega B](Entrega%20B/CG$25%20-%20Trabalho%20B%20-%20Enunciado.pdf)
+- [Entrega C](Entrega%20C/CG$25%20-%20Trabalho%20C%20-%20Enunciado.pdf)
 
