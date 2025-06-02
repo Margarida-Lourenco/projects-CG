@@ -67,7 +67,7 @@ function onKeyDown(event) {
             displayFloralFieldTexture();
             break;
         case '2':
-+           displayStarrySkyTexture();
+            displayStarrySkyTexture();
             break;
     }
 }

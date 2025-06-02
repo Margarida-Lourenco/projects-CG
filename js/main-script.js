@@ -16,21 +16,28 @@ const TERRAIN_WIDTH = 3560;
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
 const TERRAIN_SEGMENTS_WIDTH = 200; // Number of segments in the width. Smaller values are smoother but less detailed
 const TERRAIN_SEGMENTS_HEIGHT = TERRAIN_SEGMENTS_WIDTH; 
-const TERRAIN_TEXTURE_WIDTH_IN_WORLD = 100 // Size of texture in units
-const TERRAIN_TEXTURE_HEIGHT_IN_WORLD = TERRAIN_TEXTURE_WIDTH_IN_WORLD // Size of texture in units
+const TEXTURE_WORLD_SIZE = 100; // Size of one texture tile in world units (both width and height)
+
 const HEIGHTMAP_SCALE = 300;
 const HEIGHTMAP_AREA_SELECTION_RATIO = 0.6; // Value between 0 (exclusive) and 1 (inclusive). 1 = full image, 0.5 = half area.
 // Original heightmap was 17.8km wide, so 0.2 = 3.56km wide
 // Original size * Scale / Width = IRL Meters per unit
+
+// Texture pixel dimensions - you can change these arbitrarily without affecting world size
+const TERRAIN_TEXTURE_WIDTH = 1024 ; // Size of the floral field texture in pixels
+const TERRAIN_TEXTURE_HEIGHT = TERRAIN_TEXTURE_WIDTH; // Size of the floral field texture in pixels
+const NUM_FLOWERS = 300; // Number of flowers in the floral field texture
+const FLOWER_SIZE = 1; // Minimum flower size in pixels
+const FLOWER_VARIATION = 2; // Variation in flower size in pixels
 
 const MOON_SCALE = 0.025; // Radius as percentage of terrain width
 const SKYDOME_SCALE = 0.5; // Radius as percentage of terrain width
 const MOON_ALTITUDE = 1 * Math.PI / 6; // Angle of moon above terrain relative to XZ plane
 const MOON_ANGLE = -1 * Math.PI / 3; // Angle of moon in radians relative to x axis
 
-const NUM_STARS = 8000; // Number of stars in the starry sky texture
+const NUM_STARS = 2000; // Number of stars in the starry sky texture
 const STAR_SIZE = 0.1; // Minimum star size
-const STAR_VARIATION = 0.3; // Variation in star size
+const STAR_VARIATION = 0.2; // Variation in star size
 const SKY_TEXTURE_WIDTH = 4096 * 2; // Width of the starry sky texture
 const SKY_TEXTURE_HEIGHT = SKY_TEXTURE_WIDTH / 2; // Mapping is 2:1
 // Smaller height voids stretching at equator but more distortion at poles
@@ -47,7 +54,7 @@ function init() {
             const axesHelper = new THREE.AxesHelper(1000);
             scene.add(axesHelper);
             //grid is currently slightly misaligned with the texture repetition pattern
-            const gridHelper = new THREE.GridHelper(TERRAIN_WIDTH, TERRAIN_WIDTH / TERRAIN_TEXTURE_WIDTH_IN_WORLD);
+            const gridHelper = new THREE.GridHelper(TERRAIN_WIDTH, TERRAIN_WIDTH / TEXTURE_WORLD_SIZE);
             scene.add(gridHelper);
             axesHelper.position.set(0, 100, 0);
             gridHelper.position.set(0, 50, 0);
@@ -71,10 +78,10 @@ function init() {
     // Load Heightmap and Create Terrain
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load('textures/heightmap.png', function (heightmapTexture) {
-        const floralTexture = createFloralFieldTexture();
+        const floralTexture = createFloralFieldTexture(TERRAIN_TEXTURE_WIDTH, TERRAIN_TEXTURE_HEIGHT, NUM_FLOWERS, FLOWER_SIZE, FLOWER_VARIATION);
         floralTexture.wrapS = THREE.RepeatWrapping;
         floralTexture.wrapT = THREE.RepeatWrapping;
-        floralTexture.repeat.set(TERRAIN_WIDTH / TERRAIN_TEXTURE_WIDTH_IN_WORLD, TERRAIN_HEIGHT / TERRAIN_TEXTURE_HEIGHT_IN_WORLD); // Adjusted to match terrain size
+        floralTexture.repeat.set(TERRAIN_WIDTH / TEXTURE_WORLD_SIZE, TERRAIN_HEIGHT / TEXTURE_WORLD_SIZE); // Texture repeats based on world size
         createTerrain(heightmapTexture, floralTexture);
         createSkydome(); 
     }, undefined, function (error) {
