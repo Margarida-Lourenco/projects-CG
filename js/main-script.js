@@ -337,16 +337,19 @@ function createUFO() {
         lightMesh.position.z = Math.sin(angle) * lightRadius;
         lightMesh.position.y = - Math.sqrt(bodyRadius * bodyRadius - lightRadius * lightRadius) * bodyFlattening; //Pin lights to surface of UFO body 
 
-        const pointLight = new THREE.PointLight(0x00ff33, 5, 0, 3); // color, intensity, distance
+        const pointLight = new THREE.PointLight(0x00ff33, 100, 0, 3); // color, intensity, distance
+        
         lightMesh.add(pointLight);
+        ufoLights.push(pointLight); 
+        
         pointLight.position.set(0, -smallSphereRadius/2, 0); // Position point light halfway between sphere and body
+        
         if (debugFlag) { 
             const pointLightHelper = new THREE.PointLightHelper(pointLight, smallSphereRadius * 2);
             scene.add(pointLightHelper);
         }
         
         pointLight.position.set(0, -smallSphereRadius * 0.5, 0); 
-        ufoLights.push(pointLight); 
         ufoGroup.add(lightMesh); // Add the light sphere to the UFO group
     }
 
@@ -509,7 +512,6 @@ function createAlentejoHouse() {
 function switchDirectionalLightMode() {
     if (directionalLight) {
         directionalLight.visible = !directionalLight.visible;
-        console.log(`Directional light toggled: ${directionalLight.visible ? 'ON' : 'OFF'}`);
     }
 }
 
@@ -517,7 +519,6 @@ function switchSpotLightMode() {
     const spotLight = ufoBeamMesh ? ufoBeamMesh.children.find(child => child instanceof THREE.SpotLight) : null; 
     if (spotLight) {
         spotLight.visible = !spotLight.visible;
-        console.log(ufo);
     } 
 }
 
