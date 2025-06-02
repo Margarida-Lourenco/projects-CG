@@ -224,9 +224,10 @@ function createMoon() {
     });
     moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
     // Position moon on the surface of the skydome sphere
-    const currentDirX = Math.cos(MOON_ANGLE) ;
+    // Spherical coordinates: X = cos(altitude) * cos(angle), Y = sin(altitude), Z = cos(altitude) * sin(angle)
+    const currentDirX = Math.cos(MOON_ALTITUDE) * Math.cos(MOON_ANGLE);
     const currentDirY = Math.sin(MOON_ALTITUDE);
-    const currentDirZ = Math.sin(MOON_ANGLE); // Altitude is the angle from the center of the sphere
+    const currentDirZ = Math.cos(MOON_ALTITUDE) * Math.sin(MOON_ANGLE);
     const currentDirMagnitude = Math.sqrt(currentDirX*currentDirX + currentDirY*currentDirY + currentDirZ*currentDirZ);
     console.log("Current direction vector: ", currentDirX, currentDirY, currentDirZ);
     
@@ -243,7 +244,7 @@ function createMoon() {
 }
 
 function createDirectionalLight() {
-    directionalLight = new THREE.DirectionalLight(0xded6fc, 1);
+    directionalLight = new THREE.DirectionalLight(0xffffff, MOONLIGHT_INTENSITY || 1.0);
 
     if (moonMesh) {
         directionalLight.position.copy(moonMesh.position);
