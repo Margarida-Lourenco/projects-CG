@@ -7,7 +7,8 @@ import { createFloralFieldTexture, createStarrySkyTexture } from './procedural-t
 
 let scene, camera, renderer, controls;
 let terrainMesh, moonMesh, directionalLight;
-let ufo; // stores the UFO group
+let ufo, ufoGroup; 
+let ufoBeamMesh, ufoLights = []; 
 let keyStates = {}; // To store the state of pressed keys
 
 const debugFlag = true; // Set to true to enable scene helpers
@@ -46,7 +47,7 @@ const SKY_TEXTURE_HEIGHT = SKY_TEXTURE_WIDTH / 2; // Mapping is 2:1
 const UFO_ALTITUDE = 200; // Height of UFO above terrain
 const UFO_ROTATION_SPEED = 0.02; // radians per frame
 const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibility)
-
+const NUM_LIGHTS = 8; // Number of lights on the UFO
 
 function init() {
     scene = new THREE.Scene();
@@ -263,13 +264,12 @@ function createDirectionalLight() {
 }
 
 function createUFO() {
-    const ufoGroup = new THREE.Group();
+    ufoGroup = new THREE.Group();
     const bodyRadius = 20;
     const cockpitRadius = bodyRadius / 3; 
     const cockpitFlattening = 0.75; 
     const bodyFlattening = 0.25;
 
-    const numLights = 8; // Number of small spheres (lights)
     const lightRadius = bodyRadius * 0.6; // Radius at which lights are placed, slightly inside the body
     const smallSphereRadius = bodyRadius * 0.05; // Size of the small spheres
     const beamRadius = lightRadius * 0.8 - smallSphereRadius; // Radius of the beam cilinder, slightly smaller than the lights
@@ -306,7 +306,7 @@ function createUFO() {
 
     const beamHeight = bodyRadius * bodyFlattening + smallSphereRadius; // Height of cilinder part of UFO
     const ufoBeamGeometry = new THREE.CylinderGeometry(beamRadius, beamRadius, beamHeight, 32);
-    const ufoBeamMesh = new THREE.Mesh(ufoBeamGeometry, ufoBodyMaterial);
+    ufoBeamMesh = new THREE.Mesh(ufoBeamGeometry, ufoBodyMaterial);
     
     const ufoBeamLight = new THREE.SpotLight(0x00ff33, 5,  UFO_ALTITUDE, Math.PI / 12, 1, 0.4); // color, intensity, distance, angle, penumbra, decay
     ufoBeamMesh.position.y = - (bodyRadius * bodyFlattening) / 2 - beamHeight / 2 + (bodyRadius * bodyFlattening * 0.5); // Position beam bottom at the body's bottom edge
@@ -317,10 +317,7 @@ function createUFO() {
     const beamLightTarget = new THREE.Object3D();
     beamLightTarget.position.set(0, -UFO_ALTITUDE, 0); // Terrain will always be slightly higher than ALT value
     ufoBeamLight.target = beamLightTarget; 
-    ufoBeamMesh.add(beamLightTarget); // Add target to the beam mesh
-
-
-
+    ufoBeamMesh.add(beamLightTarget); 
     ufoBeamMesh.add(ufoBeamLight); 
     
     if (debugFlag) {
@@ -330,8 +327,8 @@ function createUFO() {
 
     ufoGroup.add(ufoCockpitMesh, ufoBodyMesh, ufoBeamMesh); 
 
-    for (let i = 0; i < numLights; i++) {
-        const angle = (i / numLights) * Math.PI * 2; // Angle staggering for each sphere, not editable
+    for (let i = 0; i < NUM_LIGHTS; i++) {
+        const angle = (i / NUM_LIGHTS) * Math.PI * 2; // Angle staggering for each sphere, not editable
         const lightGeometry = new THREE.SphereGeometry(smallSphereRadius, 8, 8);
         const lightMesh = new THREE.Mesh(lightGeometry, lightMaterial);
         lightMesh.castShadow = false; // Makes it not interfere with point light
@@ -349,6 +346,7 @@ function createUFO() {
         }
         
         pointLight.position.set(0, -smallSphereRadius * 0.5, 0); 
+        ufoLights.push(pointLight); 
         ufoGroup.add(lightMesh); // Add the light sphere to the UFO group
     }
 
@@ -357,7 +355,7 @@ function createUFO() {
 }
 
 function createCorkTree() {
-    const stemGeometry = new THREE.CylinderGeometry(10, 10, 90, 32);  // (radiusTop, radiusBottom, height, radialSegments)
+    const stemGeometry = new THREE.CylinderGeometry(10, 10, 90, 32);  
     const stemMaterial = new THREE.MeshStandardMaterial({ color: 0xdb7322, roughness: 0.5, metalness: 0.1 });
     const stemMesh = new THREE.Mesh(stemGeometry, stemMaterial);
 
@@ -508,21 +506,92 @@ function createAlentejoHouse() {
 
 }
 
-
-function onKeyDown(event) {
-    if (event.key === 'd' || event.key === 'D') {
-        if (directionalLight) {
-            directionalLight.visible = !directionalLight.visible;
-            console.log(`Directional light toggled: ${directionalLight.visible ? 'ON' : 'OFF'}`);
-        }
+function switchDirectionalLightMode() {
+    if (directionalLight) {
+        directionalLight.visible = !directionalLight.visible;
+        console.log(`Directional light toggled: ${directionalLight.visible ? 'ON' : 'OFF'}`);
     }
-    // Store key state for movement
-    keyStates[event.key.toLowerCase()] = true;
 }
 
-function onKeyUp(event) {
-    // Clear key state for movement
-    keyStates[event.key.toLowerCase()] = false;
+function switchSpotLightMode() {
+    const spotLight = ufoBeamMesh ? ufoBeamMesh.children.find(child => child instanceof THREE.SpotLight) : null; 
+    if (spotLight) {
+        spotLight.visible = !spotLight.visible;
+        console.log(ufo);
+    } 
+}
+
+function switchPointLightsMode() {
+    for (let i = 0; i < NUM_LIGHTS; i++) {
+        ufoLights[i].visible = !ufoLights[i].visible;
+    }
+}
+
+function onKeyDown(e) {
+    switch (e.keyCode) {
+        case 68: //D
+        case 100: //d
+            switchDirectionalLightMode(); 
+            break;
+
+        case 81: //Q
+        case 113: //q
+            break;
+
+        case 87: //W
+        case 119: //w
+            break;
+
+        case 69: //E
+        case 101: //e
+            break;
+
+        case 82: //R
+        case 114: //r
+            break;
+            
+        case 80: //P
+        case 112: //p
+            switchPointLightsMode();
+            break;
+
+        case 83: //S
+        case 115: //s
+            switchSpotLightMode();
+            break;
+
+        case 37: // Left arrow
+            keyStates['arrowleft'] = true;
+            break;
+        
+        case 39: // Right arrow
+            keyStates['arrowright'] = true;
+            break;
+        case 38: // Up arrow
+            keyStates['arrowup'] = true;
+            break;
+        case 40: // Down arrow
+            keyStates['arrowdown'] = true;
+            break;
+    }
+    
+}
+
+function onKeyUp(e) {
+  switch (e.keyCode) {
+    case 37: // Left arrow
+        keyStates['arrowleft'] = false;
+        break;
+    case 39: // Right arrow
+        keyStates['arrowright'] = false;
+        break;
+    case 38: // Up arrow
+        keyStates['arrowup'] = false;
+        break;
+    case 40: // Down arrow
+        keyStates['arrowdown'] = false;
+        break;
+  }
 }
 
 function updateUFOMovement() {
