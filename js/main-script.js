@@ -247,6 +247,11 @@ function createDirectionalLight() {
 
     if (moonMesh) {
         directionalLight.position.copy(moonMesh.position);
+        const moonCenter = moonMesh.position.clone();
+        const moonRadius = moonMesh.geometry.parameters.radius;
+        const direction = moonCenter.clone().normalize();
+        direction.multiplyScalar(-moonRadius);
+        directionalLight.position.copy(moonCenter.clone().add(direction));
     } else {
         // Fallback if moonMesh is not yet created, which should not happen
         directionalLight.position.set(TERRAIN_WIDTH * 0.2, TERRAIN_WIDTH * 0.2, -TERRAIN_WIDTH * 0.2);
