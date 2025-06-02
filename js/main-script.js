@@ -95,6 +95,7 @@ function init() {
     window.addEventListener('keyup', onKeyUp, false); // Added keyup listener for movement
 
     ufo = createUFO(); // Assign created UFO to global variable
+    allocateMultipleCorkTrees(); // Create multiple cork trees
     ufo.position.set(0, UFO_ALTITUDE, 0); // Position UFO above the terrain
     scene.add(ufo);
 
@@ -350,6 +351,72 @@ function createUFO() {
 
     return ufoGroup;
 
+}
+
+function createCorkTree() {
+    const stemGeometry = new THREE.CylinderGeometry(10, 10, 90, 32);  // (radiusTop, radiusBottom, height, radialSegments)
+    const stemMaterial = new THREE.MeshStandardMaterial({ color: 0xdb7322, roughness: 0.5, metalness: 0.1 });
+    const stemMesh = new THREE.Mesh(stemGeometry, stemMaterial);
+
+    const branchGeometry = new THREE.CylinderGeometry(5, 5, 45, 32);
+    const branchMaterial = new THREE.MeshStandardMaterial({ color: 0xdb7322, roughness: 0.5, metalness: 0.1 });
+    const branchMesh = new THREE.Mesh(branchGeometry, branchMaterial);
+
+    stemMesh.rotation.set(0, 0, Math.PI / 10);
+    stemMesh.position.set(0, 90, 0); 
+
+    branchMesh.rotation.set(0, 0, -Math.PI / 5); 
+    branchMesh.position.set(15, 10, 0);
+
+    const treeTop1 = createCorkTreeTop(20, 20, 20); 
+    const treeTop2 = createCorkTreeTop(8, 8, 8);
+
+    treeTop1.position.set(0, 60, 0); 
+    treeTop2.position.set(0, 20, 0); 
+
+    branchMesh.add(treeTop2); 
+    stemMesh.add(branchMesh, treeTop1); 
+
+    return stemMesh;
+
+}
+
+function createCorkTreeTop(x,y,z){
+    const ellipsoidGeometry = new THREE.SphereGeometry(x, y, z);
+    ellipsoidGeometry.rotateZ(Math.PI/2);
+    ellipsoidGeometry.scale(2, 1, 1);
+    const treeTopMaterial = new THREE.MeshStandardMaterial({ color: 0x218732, roughness: 0.5, metalness: 0.1 });
+    const ellipsoidMesh = new THREE.Mesh(ellipsoidGeometry, treeTopMaterial);
+
+    return ellipsoidMesh;
+}
+
+function allocateMultipleCorkTrees() {
+    const numTrees = 50; // Number of trees to create
+    const trees = [];
+
+    for (let i = 0; i < numTrees; i++) {
+        const tree = createCorkTree();
+
+        const posX = (Math.random() - 0.5) * TERRAIN_WIDTH * 0.8;
+        const posZ = (Math.random() - 0.5) * TERRAIN_WIDTH * 0.8;
+        const posY = 80; // Ground level
+
+        // random scale for Y axis (height), between 0.8 and 1.5 times the original height
+        const scaleY = 0.8 + Math.random() * 0.7;
+
+        // Random rotation around Y axis (full circle)
+        const rotationY = Math.random() * Math.PI * 2;
+
+        tree.position.set(posX, posY, posZ);
+        tree.scale.set(1, scaleY, 1);
+        tree.rotation.y = rotationY;
+
+        trees.push(tree);
+        scene.add(tree);
+    }
+
+    return trees;
 }
 
 function onKeyDown(event) {
