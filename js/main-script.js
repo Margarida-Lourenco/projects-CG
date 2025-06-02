@@ -32,12 +32,13 @@ const FLOWER_VARIATION = 2; // Variation in flower size in pixels
 
 const MOON_SCALE = 0.025; // Radius as percentage of terrain width
 const SKYDOME_SCALE = 0.5; // Radius as percentage of terrain width
-const MOON_ALTITUDE = 1 * Math.PI / 6; // Angle of moon above terrain relative to XZ plane
+const MOON_ALTITUDE = 1 * Math.PI / 4; // Angle of moon above terrain relative to XZ plane
 const MOON_ANGLE = -1 * Math.PI / 3; // Angle of moon in radians relative to x axis
 
 const NUM_STARS = 2000; // Number of stars in the starry sky texture
 const STAR_SIZE = 0.1; // Minimum star size
 const STAR_VARIATION = 0.2; // Variation in star size
+const TWILIGHT_OVERLAP = 1; // How much the twilight gradient overlaps with stars (0-1) * 30%
 const SKY_TEXTURE_WIDTH = 4096 * 2; // Width of the starry sky texture
 const SKY_TEXTURE_HEIGHT = SKY_TEXTURE_WIDTH / 2; // Mapping is 2:1
 // Smaller height voids stretching at equator but more distortion at poles
@@ -194,7 +195,7 @@ function createSkydome() {
     // Invert geometry on the x-axis so that faces point inward
     skydomeGeometry.scale(1, 1, 1);
 
-    const starrySkyTexture = createStarrySkyTexture(SKY_TEXTURE_WIDTH, SKY_TEXTURE_HEIGHT, NUM_STARS, STAR_SIZE, STAR_VARIATION);
+    const starrySkyTexture = createStarrySkyTexture(SKY_TEXTURE_WIDTH, SKY_TEXTURE_HEIGHT, NUM_STARS, STAR_SIZE, STAR_VARIATION, TWILIGHT_OVERLAP);
 
     const skydomeMaterial = new THREE.MeshBasicMaterial({
         map: starrySkyTexture,

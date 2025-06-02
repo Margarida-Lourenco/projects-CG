@@ -56,52 +56,71 @@ export function createFloralFieldTexture(
 }
 
 /**
- * Generates a procedural texture representing a starry sky.
+ * Generates a procedural texture representing a starry sky with twilight effect.
  * @returns {THREE.CanvasTexture} The generated texture.
  * @param {number} width - The width of the texture in pixels. Default is 512.
  * @param {number} height - The height of the texture in pixels. Default is 512.
  * @param {number} stars - The number of stars to generate.
- * @param {number} minRadius - The minimum size of the stars. Default is 0.5.
- * @param {number} variation - The maximum variation in star size. Default is 0.2.
+ * @param {number} minStarSize - The minimum size of the stars. Default is 0.5.
+ * @param {number} starVariation - The maximum variation in star size. Default is 0.2.
+ * @param {number} minHeight - The minimum height (0-1) where stars can appear. 0 = horizon, 1 = zenith. Default is 0.
+ * @param {number} maxHeight - The maximum height (0-1) where stars can appear. 0 = horizon, 1 = zenith. Default is 1.
+ * @param {number} twilightOverlap - How much the violet gradient extends from horizon (0-1). 0 = no gradient, 1 = to zenith. Default is 0.3.
 */
 export function createStarrySkyTexture(
         width = DEFAULT_TEXTURE_WIDTH, 
         height = DEFAULT_TEXTURE_HEIGHT, 
         stars = 800,
         minStarSize = 0.5,
-        starVariation = 0.2
+        starVariation = 0.2,
+        twilightOverlap = 0,
     ) {
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
     const context = canvas.getContext('2d');
 
-    // Background gradient
-    const gradient = context.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, '#000068'); // Deep blue
-    gradient.addColorStop(1, '#320154'); // Dark violet
+    // Background gradient. starts at bottom pole (0) and goes to zenith (1)
+    const gradient = context.createLinearGradient(0, height, 0, 0);
+    gradient.addColorStop(1, '#000068'); // Deep blue
+    gradient.addColorStop(0, '#320154'); // Dark violet
     context.fillStyle = gradient;
     context.fillRect(0, 0, width, height);
 
     const scaleFactor = Math.sqrt((width * height) / (DEFAULT_TEXTURE_WIDTH * DEFAULT_TEXTURE_HEIGHT));
     const maxStarRadius = (starVariation + minStarSize) * scaleFactor;
     
-    // Create safe margins to prevent flowers from being cut off at edges
+    // Create safe margins to prevent stars from being cut off at edges
     const margin = Math.ceil(maxStarRadius);
     const safeWidth = width - 2 * margin;
     const safeHeight = height - 2 * margin;
 
+    // Draw stars first
     for (let i = 0; i < stars; i++) {
-        const x = Math.random() * safeWidth;
-        const y = Math.random() * safeHeight;
-        // Adjusted star radius for higher res texture, aiming for small, sharp points
-        // Stars of 1 to 2 pixels radius (at 512x512 texture size, scales with size)
-        const radius = (Math.random() * starVariation + minStarSize ) * scaleFactor;
+        const x = Math.random() * safeWidth + margin;
+        const y = Math.random() * safeHeight + margin;
+        const radius = (Math.random() * starVariation + minStarSize) * scaleFactor;
 
         context.beginPath();
         context.arc(x, y, radius, 0, Math.PI * 2);
         context.fillStyle = 'white';
         context.fill();
+    }
+
+    // Create twilight overlay gradient that fades stars near the horizon
+    // Middle of texture (height/2) = horizon, bottom = underground, top = zenith
+    if (twilightOverlap > 0) {
+        const twilightHeight = Math.min(twilightOverlap, 0.2);
+        const intensity = Math.pow(twilightOverlap, 0.2); // Non-linear intensity control
+        
+        const twilightGradient = context.createLinearGradient(0, height, 0, 0);
+        twilightGradient.addColorStop(0.5, `rgba(49, 1, 84, ${intensity})`); // Horizon with variable intensity
+        twilightGradient.addColorStop(0.5 + twilightHeight, 'rgba(49, 1, 84, 0)'); // Fade to transparent
+        
+        context.globalCompositeOperation = 'normal';
+        context.fillStyle = twilightGradient;
+        context.fillRect(0, 0, width, height);
+        context.globalCompositeOperation = 'source-over'; // Reset blend mode
     }
     const texture = new THREE.CanvasTexture(canvas);
     texture.needsUpdate = true;
