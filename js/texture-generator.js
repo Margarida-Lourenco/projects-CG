@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createFloralFieldTexture, createStarrySkyTexture } from './procedural-textures.js';
+import { createFloralFieldTexture, createStarrySkyTexture, createCheeseTexture } from './procedural-textures.js';
 
 let scene, camera, renderer;
 let textureCanvas;
@@ -7,6 +7,7 @@ let planeMesh, planeMaterial;
 
 const TEXTURE_WIDTH = 512;
 const TEXTURE_HEIGHT = 512;
+let cheese_easter_egg_counter = 0; // Counter for cheese texture easter egg
 
 function init() {
     // Scene
@@ -61,6 +62,14 @@ function displayStarrySkyTexture() {
     planeMaterial.map.needsUpdate = true;
 }
 
+function displayCheeseTexture() {
+    console.log("Generating and displaying Cheese Texture (Key 'c')");
+    const cheeseTexture = createCheeseTexture(TEXTURE_WIDTH, TEXTURE_HEIGHT);
+    planeMaterial.map = cheeseTexture;
+    planeMaterial.map.needsUpdate = true;
+}
+
+
 function onKeyDown(event) {
     switch (event.key) {
         case '1':
@@ -68,6 +77,15 @@ function onKeyDown(event) {
             break;
         case '2':
             displayStarrySkyTexture();
+            break;
+        case 'c':
+
+            if (cheese_easter_egg_counter >= 20) {
+                displayCheeseTexture();
+            }
+            else {
+                cheese_easter_egg_counter++;
+            }
             break;
     }
 }

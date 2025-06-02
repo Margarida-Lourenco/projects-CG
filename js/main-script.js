@@ -3,7 +3,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { VRButton } from "three/addons/webxr/VRButton.js";
 import * as Stats from "three/addons/libs/stats.module.js";
 import { GUI } from "three/addons/libs/lil-gui.module.min.js"; 
-import { createFloralFieldTexture, createStarrySkyTexture } from './procedural-textures.js';
+import { createFloralFieldTexture, createStarrySkyTexture, createCheeseTexture} from './procedural-textures.js';
 
 let scene, camera, renderer, controls;
 let terrainMesh, moonMesh, directionalLight;
@@ -11,7 +11,7 @@ let ufo, ufoGroup;
 let ufoBeamMesh, ufoLights = []; 
 let keyStates = {}; // To store the state of pressed keys
 
-const debugFlag = true; // Set to true to enable scene helpers
+const debugFlag = false; // Set to true to enable scene helpers
 
 const TERRAIN_WIDTH = 3560; 
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
@@ -33,8 +33,10 @@ const FLOWER_VARIATION = 2; // Variation in flower size in pixels
 
 const MOON_SCALE = 0.025; // Radius as percentage of terrain width
 const SKYDOME_SCALE = 0.5; // Radius as percentage of terrain width
-const MOON_ALTITUDE = 1 * Math.PI / 4; // Angle of moon above terrain relative to XZ plane
+const MOON_ALTITUDE = 1 * Math.PI / 6; // Angle of moon above terrain relative to XZ plane
 const MOON_ANGLE = -1 * Math.PI / 3; // Angle of moon in radians relative to x axis
+const MOONLIGHT_INTENSITY = 0.7; // Intensity of the moonlight 0-1
+const IS_CHEESE = true // Is the moon made of cheese?
 
 const NUM_STARS = 2000; // Number of stars in the starry sky texture
 const STAR_SIZE = 0.1; // Minimum star size
@@ -58,8 +60,8 @@ function init() {
             //grid is currently slightly misaligned with the texture repetition pattern
             const gridHelper = new THREE.GridHelper(TERRAIN_WIDTH, TERRAIN_WIDTH / TEXTURE_WORLD_SIZE);
             scene.add(gridHelper);
-            axesHelper.position.set(0, 100, 0);
-            gridHelper.position.set(0, 50, 0);
+            axesHelper.position.set(0, 0, 0);
+            gridHelper.position.set(0, 0, 0);
     }
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4); // Adjusted far clipping plane
     camera.position.set(0, TERRAIN_WIDTH * 0.5, TERRAIN_WIDTH * 0.5); // Adjusted camera for new scale
@@ -151,6 +153,7 @@ function createTerrain(heightmapTexture, floralTexture) {
         effectiveHeight = sHeight;
     }
 
+    // Manually displace vertices based on heightmap data, for shading
     const vertices = terrainGeometry.attributes.position;
     for (let i = 0, j = 0; i < vertices.count; i++, j += 3) {
         // Map plane vertex (x,y) to heightmap image coordinates (u,v)
@@ -181,9 +184,10 @@ function createTerrain(heightmapTexture, floralTexture) {
 
     const terrainMaterial = new THREE.MeshStandardMaterial({
         map: floralTexture,
-        side: THREE.SingleSide, // Render both sides, useful for varied terrain
+        side: THREE.FrontSide, 
         displacementMap: heightmapTexture,
-        displacementScale: HEIGHTMAP_SCALE, // Sync with manual displacement
+        displacementScale: HEIGHTMAP_SCALE, // Scale the heightmap to match terrain size
+        displacementBias: -HEIGHTMAP_SCALE / 8, // Center the heightmap roughly around 0
         roughness: 0.9,
         metalness: 0.2
     });
@@ -214,15 +218,33 @@ function createSkydome() {
 
 function createMoon() {
     const moonRadius = TERRAIN_WIDTH * MOON_SCALE; // Moon size relative to terrain
-    const moonGeometry = new THREE.SphereGeometry(moonRadius, 32, 32);
-    const moonMaterial = new THREE.MeshStandardMaterial({
-        color: 0xffffff,
-        emissive: 0xffffdd,
-        emissiveIntensity: 0.8,
-        roughness: 0.9,
-        metalness: 0.1
-    });
-    moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
+    const moonGeometry = new THREE.SphereGeometry(moonRadius, 64, 32); // Higher segments for better texture mapping
+    if (IS_CHEESE) {
+        // Use a 2:1 aspect ratio for the cheese texture to reduce stretching
+        const cheeseTextureWidth = 2048;
+        const cheeseTextureHeight = 1024;
+        const cheeseTexture = createCheeseTexture(cheeseTextureWidth, cheeseTextureHeight, 20, 8, 16);
+        cheeseTexture.wrapS = THREE.RepeatWrapping;
+        cheeseTexture.wrapT = THREE.RepeatWrapping;
+        // Main cheese moon: fully lit, shows texture clearly
+        const cheeseMaterial = new THREE.MeshBasicMaterial({
+            map: cheeseTexture,
+            emissive: 0xffffaa, // Emissive color for a glowing effect
+            emissiveIntensity: 0.8,
+        });
+        moonMesh = new THREE.Mesh(moonGeometry, cheeseMaterial);
+    } else {
+        // Normal moon: keep original look
+        const moonMaterial = new THREE.MeshStandardMaterial({
+            color: 0xfffff0,
+            emissive: 0xffffaa,
+            emissiveIntensity: 0.8,
+            roughness: 0.9,
+            metalness: 0.1,
+            map: null
+        });
+        moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
+    }
     // Position moon on the surface of the skydome sphere
     // Spherical coordinates: X = cos(altitude) * cos(angle), Y = sin(altitude), Z = cos(altitude) * sin(angle)
     const currentDirX = Math.cos(MOON_ALTITUDE) * Math.cos(MOON_ANGLE);
@@ -239,6 +261,29 @@ function createMoon() {
         TERRAIN_WIDTH * currentDirY * scaleToSkydome - (currentDirY * moonRadius),  //Y always > 0 hopefully :P
         TERRAIN_WIDTH * currentDirZ * scaleToSkydome - (currentDirZ * moonRadius),
     );
+
+    // Rotate the moon so its local X axis points toward the world origin (0,0,0)
+    moonMesh.rotation.set(
+        0, // Rotate around X axis to match altitude
+        Math.PI - MOON_ANGLE, // Rotate around Y axis to match angle
+        MOON_ALTITUDE - Math.PI / 2  // No rotation around Z axis
+    );
+
+    if (debugFlag) {
+        const moonHelper = new THREE.AxesHelper(moonRadius * 2, 0xff0000, 0x00ff00, 0x0000ff)
+        moonHelper.position.copy(moonMesh.position);
+        moonHelper.rotation.copy(moonMesh.rotation);
+        const wireframeGeometry = new THREE.SphereGeometry(moonRadius * 1.01, 32, 16);
+        const wireframeMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+        const wireframeMesh = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
+        wireframeMesh.position.copy(moonMesh.position);
+        wireframeMesh.rotation.copy(moonMesh.rotation);
+        scene.add(wireframeMesh);
+     
+        scene.add(moonMesh); // Add a slightly larger moon mesh for visibility
+        scene.add(moonHelper);
+    }
+
     scene.add(moonMesh);
     console.log("Moon created and positioned on skydome surface.");
 }

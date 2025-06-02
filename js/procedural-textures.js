@@ -73,7 +73,7 @@ export function createStarrySkyTexture(
         stars = 800,
         minStarSize = 0.5,
         starVariation = 0.2,
-        twilightOverlap = 0,
+        twilightOverlap = 0.5,
     ) {
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -124,5 +124,74 @@ export function createStarrySkyTexture(
     }
     const texture = new THREE.CanvasTexture(canvas);
     texture.needsUpdate = true;
+    return texture;
+}
+
+export function createCheeseTexture(
+    width = DEFAULT_TEXTURE_WIDTH,
+    height = DEFAULT_TEXTURE_HEIGHT,
+    numHoles = 8,
+    minHoleRadius = 8,
+    variation = 20
+) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    const maxHoleRadius = minHoleRadius + variation;
+
+    // Base color for cheese
+    context.fillStyle = '#fdd844'; // Brighter yellow cheese color
+    context.fillRect(0, 0, width, height);
+
+    const scaleFactor = Math.sqrt((width * height) / (DEFAULT_TEXTURE_WIDTH * DEFAULT_TEXTURE_HEIGHT));
+    
+    // Create safe margins to prevent holes from being cut off at edges
+    const margin = Math.ceil(maxHoleRadius * scaleFactor);
+    const safeWidth = width - 2 * margin;
+    const safeHeight = height - 8 * margin;
+
+
+    let holes = [];
+    // Draw holes
+    for (let i = 0; i < numHoles; i++) {
+        let x = Math.random() * safeWidth + margin;
+        let y = Math.random() * safeHeight + 4 * margin;
+        const radius = (Math.random() * variation + minHoleRadius) * scaleFactor;
+
+        // Ensure holes don't overlap with existing ones
+        let tries = 0;
+        let overlap = false;
+        do {
+            overlap = false;
+            for (let j = 0; j < holes.length; j++) {
+                const prevX = holes[j][0];
+                const prevY = holes[j][1];
+                const prevRadius = holes[j][2];
+                const dx = x - prevX;
+                const dy = y - prevY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < radius + prevRadius) {
+                    // Overlap detected, try a new position
+                    x = Math.random() * safeWidth + margin;
+                    y = Math.random() * safeHeight + 4 * margin;
+                    overlap = true;
+                    break;
+                }
+            }
+            tries++;
+        } while (overlap && tries < 100);
+
+        context.beginPath();
+        context.arc(x, y, radius, 0, Math.PI * 2);
+        context.fillStyle = '#b77400'; // Dark brown for holes (more contrast)
+        context.fill();
+
+        holes.push([x, y, radius]);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    
     return texture;
 }
