@@ -97,6 +97,9 @@ function init() {
     ufo = createUFO(); // Assign created UFO to global variable
     allocateMultipleCorkTrees(); // Create multiple cork trees
     ufo.position.set(0, UFO_ALTITUDE, 0); // Position UFO above the terrain
+
+    const house = createAlentejoHouse();
+    scene.add(house);
     scene.add(ufo);
 
     animate();
@@ -418,6 +421,93 @@ function allocateMultipleCorkTrees() {
 
     return trees;
 }
+
+function createAlentejoHouse() {
+    let position = new THREE.Vector3(200, 80, -500)
+    // MATERIAIS
+    const white = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const blue = new THREE.MeshLambertMaterial({ color: 0x005bbb });
+    const roofOrange = new THREE.MeshLambertMaterial({ color: 0xffa500 });
+    const dark = new THREE.MeshLambertMaterial({ color: 0x333333 });
+
+    // DIMENSÕES
+    const width = 120;
+    const height = 40;
+    const depth = 60;
+
+    // CASA PRINCIPAL
+    const house = new THREE.Group();
+    house.position.copy(position); // posição base global da casa
+
+    // Corpo principal
+    const base = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), white);
+    base.position.set(0, height / 2, 0);
+    house.add(base);
+
+    // Faixa azul na base
+    const baseTrim = new THREE.Mesh(new THREE.BoxGeometry(width + 0.1, 10, depth + 0.1), blue);
+    baseTrim.position.set(0, 5, 0);
+    house.add(baseTrim);
+
+    // Telhado duas águas (usamos cilindro rotacionado)
+    const roofGeo = new THREE.CylinderGeometry(depth / 2, depth / 2, width, 2, 1, false, 0, Math.PI);
+    const roofMesh = new THREE.Mesh(roofGeo, roofOrange);
+    roofMesh.rotation.z = Math.PI / 2;
+    roofMesh.position.set(0, height, 0); // acima da casa
+    house.add(roofMesh);
+
+    // Janelas frontais
+    const windowY = 25;
+    const windowZ = -depth / 2 - 1;
+    const windowPositions = [-50, -20, 30, 50];
+    for (let i of windowPositions) {
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(12, 12, 2), blue);
+        frame.position.set(i, windowY, windowZ);
+        const window = new THREE.Mesh(new THREE.BoxGeometry(8, 8, 1), dark);
+        window.position.set(i, windowY, windowZ - 0.5);
+        house.add(frame, window);
+    }
+
+    // Porta central
+    const doorY = 12;
+    const doorZ = depth / 2 + 1;
+    const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(14, 24, 2), blue);
+    doorFrame.position.set(10, doorY + 4, -doorZ); // virada para frente
+    const door = new THREE.Mesh(new THREE.BoxGeometry(10, 20, 1), dark);
+    door.position.set(10, doorY + 4, -doorZ - 0.5);
+    house.add(doorFrame, door);
+
+    // Porta lateral com cobertura
+    const sideDoor = new THREE.Mesh(new THREE.BoxGeometry(10, 20, 1), dark);
+    sideDoor.position.set(width / 2 - 10, 10, 10);
+    house.add(sideDoor);
+
+    const cover = new THREE.Mesh(new THREE.BoxGeometry(12, 1, 8), roofOrange);
+    cover.rotation.x = -Math.PI / 6;
+    cover.position.set(width / 2 - 10, 20, 10);
+    house.add(cover);
+
+    // Chaminés
+    const chimney1 = new THREE.Mesh(new THREE.BoxGeometry(30, 30, 10), white);
+    chimney1.position.set(-20, height + 15, -23);
+    house.add(chimney1);
+
+    const chimneyTop1 = new THREE.Mesh(new THREE.BoxGeometry(32, 4, 12), blue);
+    chimneyTop1.position.set(-20, height + 30, -23);
+    house.add(chimneyTop1);
+
+    const chimney2 = new THREE.Mesh(new THREE.BoxGeometry(30, 30, 10), white);
+    chimney2.position.set(-20, height + 15, 23);
+    house.add(chimney2);
+
+    const chimneyTop2 = new THREE.Mesh(new THREE.BoxGeometry(32, 4, 12), blue);
+    chimneyTop2.position.set(-20, height + 30, 23);
+    house.add(chimneyTop2);
+
+    return house;
+
+}
+
 
 function onKeyDown(event) {
     if (event.key === 'd' || event.key === 'D') {
