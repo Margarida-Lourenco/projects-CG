@@ -11,7 +11,7 @@ let ufo, ufoGroup;
 let ufoBeamMesh, ufoLights = []; 
 let keyStates = {}; // To store the state of pressed keys
 
-const debugFlag = false; // Set to true to enable scene helpers
+const debugFlag = true; // Set to true to enable scene helpers
 
 const TERRAIN_WIDTH = 3560; 
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
@@ -19,7 +19,7 @@ const TERRAIN_SEGMENTS_WIDTH = 200; // Number of segments in the width. Smaller 
 const TERRAIN_SEGMENTS_HEIGHT = TERRAIN_SEGMENTS_WIDTH; 
 const TEXTURE_WORLD_SIZE = 100; // Size of one texture tile in world units (both width and height)
 
-const HEIGHTMAP_SCALE = 300;
+const HEIGHTMAP_SCALE = 600;
 const HEIGHTMAP_AREA_SELECTION_RATIO = 0.6; // Value between 0 (exclusive) and 1 (inclusive). 1 = full image, 0.5 = half area.
 // Original heightmap was 17.8km wide, so 0.2 = 3.56km wide
 // Original size * Scale / Width = IRL Meters per unit
@@ -31,12 +31,15 @@ const NUM_FLOWERS = 300; // Number of flowers in the floral field texture
 const FLOWER_SIZE = 1; // Minimum flower size in pixels
 const FLOWER_VARIATION = 2; // Variation in flower size in pixels
 
+const NUM_TREES = 20; // Number of cork trees to place in the scene
+const CORK_TREE_HEIGHT = 9; // Height of the cork tree in world units
+
 const MOON_SCALE = 0.025; // Radius as percentage of terrain width
 const SKYDOME_SCALE = 0.5; // Radius as percentage of terrain width
 const MOON_ALTITUDE = 1 * Math.PI / 6; // Angle of moon above terrain relative to XZ plane
 const MOON_ANGLE = -1 * Math.PI / 3; // Angle of moon in radians relative to x axis
 const MOONLIGHT_INTENSITY = 0.7; // Intensity of the moonlight 0-1
-const IS_CHEESE = true // Is the moon made of cheese?
+const IS_CHEESE = false // Is the moon made of cheese?
 
 const NUM_STARS = 2000; // Number of stars in the starry sky texture
 const STAR_SIZE = 0.1; // Minimum star size
@@ -98,7 +101,7 @@ function init() {
     window.addEventListener('keyup', onKeyUp, false); // Added keyup listener for movement
 
     ufo = createUFO(); // Assign created UFO to global variable
-    allocateMultipleCorkTrees(); // Create multiple cork trees
+    placeCorkTrees(); // Create multiple cork trees
     ufo.position.set(0, UFO_ALTITUDE, 0); // Position UFO above the terrain
 
     const house = createAlentejoHouse();
@@ -171,7 +174,7 @@ function createTerrain(heightmapTexture, floralTexture) {
             
             if (pixelIndex >= 0 && pixelIndex < heightmapData.length) {
                 const heightValue = heightmapData[pixelIndex] / 255; // Use Red channel, normalize to 0-1
-                vertices.setZ(i, heightValue * HEIGHTMAP_SCALE);
+                vertices.setZ(i, heightValue * HEIGHTMAP_SCALE - (HEIGHTMAP_SCALE / 16)); // Scale and center height
             } else {
                 vertices.setZ(i, 0); // Default to flat if pixelIndex is out of bounds
             }
@@ -185,9 +188,9 @@ function createTerrain(heightmapTexture, floralTexture) {
     const terrainMaterial = new THREE.MeshStandardMaterial({
         map: floralTexture,
         side: THREE.FrontSide, 
-        displacementMap: heightmapTexture,
-        displacementScale: HEIGHTMAP_SCALE, // Scale the heightmap to match terrain size
-        displacementBias: -HEIGHTMAP_SCALE / 8, // Center the heightmap roughly around 0
+        // displacementMap: heightmapTexture,
+        // displacementScale: HEIGHTMAP_SCALE, // Scale the heightmap to match terrain size
+        // displacementBias: -HEIGHTMAP_SCALE / 8, // Center the heightmap roughly around 0
         roughness: 0.9,
         metalness: 0.2
     });
@@ -229,8 +232,6 @@ function createMoon() {
         // Main cheese moon: fully lit, shows texture clearly
         const cheeseMaterial = new THREE.MeshBasicMaterial({
             map: cheeseTexture,
-            emissive: 0xffffaa, // Emissive color for a glowing effect
-            emissiveIntensity: 0.8,
         });
         moonMesh = new THREE.Mesh(moonGeometry, cheeseMaterial);
     } else {
@@ -409,36 +410,59 @@ function createUFO() {
 }
 
 function createCorkTree() {
-    const stemGeometry = new THREE.CylinderGeometry(10, 10, 90, 32);  
+    const STEM_HEIGHT = CORK_TREE_HEIGHT; // Height of the cork tree stem
+    const STEM_RADIUS = 1; // Radius of the cork tree stem
+    const STEM_ROTATION = Math.PI / 10; // Rotation of the cork tree stem
+    const BRANCH_ROTATION = STEM_ROTATION - Math.PI /3; // Rotation of the cork tree branch
+    const BRANCH_SCALE = 0.5;
+    const BRANCH_HEIGHT = STEM_HEIGHT * BRANCH_SCALE; // Height of the cork tree branch
+    const BRANCH_RADIUS = STEM_RADIUS * BRANCH_SCALE; // Radius of the cork tree branch
+    const TOP_SIZE = STEM_HEIGHT * 0.2; // Height of the cork tree top
+
+    const stemGeometry = new THREE.CylinderGeometry(STEM_RADIUS, STEM_RADIUS, STEM_HEIGHT, 32);  
     const stemMaterial = new THREE.MeshStandardMaterial({ color: 0xdb7322, roughness: 0.5, metalness: 0.1 });
     const stemMesh = new THREE.Mesh(stemGeometry, stemMaterial);
 
-    const branchGeometry = new THREE.CylinderGeometry(5, 5, 45, 32);
+    const branchGeometry = new THREE.CylinderGeometry(BRANCH_RADIUS, BRANCH_RADIUS, BRANCH_HEIGHT, 32);
     const branchMaterial = new THREE.MeshStandardMaterial({ color: 0xdb7322, roughness: 0.5, metalness: 0.1 });
     const branchMesh = new THREE.Mesh(branchGeometry, branchMaterial);
 
-    stemMesh.rotation.set(0, 0, Math.PI / 10);
-    stemMesh.position.set(0, 90, 0); 
+    const treeGroup = new THREE.Group();
+    // Shift stem so its base is at y = 0 (root at origin)
+    stemMesh.position.set(0, STEM_HEIGHT / 2, 0);
 
-    branchMesh.rotation.set(0, 0, -Math.PI / 5); 
-    branchMesh.position.set(15, 10, 0);
+    // Add branch to stem, and stem to tree group
+    stemMesh.add(branchMesh);
+    treeGroup.add(stemMesh);
+    stemMesh.rotation.set(0, 0, STEM_ROTATION);
+    stemMesh.position.set(0, 0, 0); // Position stem above terrain
 
-    const treeTop1 = createCorkTreeTop(20, 20, 20); 
-    const treeTop2 = createCorkTreeTop(8, 8, 8);
+    branchMesh.rotation.set(0, 0, BRANCH_ROTATION); 
+    branchMesh.position.set(Math.sin(STEM_ROTATION) * STEM_HEIGHT, Math.cos(STEM_ROTATION) * STEM_HEIGHT / 2, 0);
 
-    treeTop1.position.set(0, 60, 0); 
-    treeTop2.position.set(0, 20, 0); 
+    const treeTop1 = createCorkTreeTop(TOP_SIZE); 
+    const treeTop2 = createCorkTreeTop(TOP_SIZE / 2);
 
-    branchMesh.add(treeTop2); 
-    stemMesh.add(branchMesh, treeTop1); 
+    
+    // Move the stem so its base is at y = 0 (root of the tree at base)
+    stemMesh.position.set(0, STEM_HEIGHT / 2, 0);
+    treeTop1.position.set(-Math.sin(STEM_ROTATION) * STEM_HEIGHT / 2, STEM_HEIGHT, 0); // Position top at the end of the stem
+    treeTop2.position.set(
+        Math.sin(STEM_ROTATION) * STEM_HEIGHT / 2 - Math.sin(BRANCH_ROTATION) * BRANCH_HEIGHT, 
+        (Math.cos(BRANCH_ROTATION) * BRANCH_HEIGHT + Math.cos(STEM_ROTATION) * STEM_HEIGHT) / 2,
+        0); 
 
-    return stemMesh;
+    const axesHelper1 = new THREE.AxesHelper(TOP_SIZE * 2);
+    treeGroup.add(axesHelper1); // Add axes helper to tree top 1
+    treeGroup.add(treeTop2); 
+    treeGroup.add(branchMesh, treeTop1); 
+
+    return treeGroup;
 
 }
 
-function createCorkTreeTop(x,y,z){
-    const ellipsoidGeometry = new THREE.SphereGeometry(x, y, z);
-    ellipsoidGeometry.rotateZ(Math.PI/2);
+function createCorkTreeTop(radius){
+    const ellipsoidGeometry = new THREE.SphereGeometry(radius);
     ellipsoidGeometry.scale(2, 1, 1);
     const treeTopMaterial = new THREE.MeshStandardMaterial({ color: 0x218732, roughness: 0.5, metalness: 0.1 });
     const ellipsoidMesh = new THREE.Mesh(ellipsoidGeometry, treeTopMaterial);
@@ -446,26 +470,45 @@ function createCorkTreeTop(x,y,z){
     return ellipsoidMesh;
 }
 
-function allocateMultipleCorkTrees() {
-    const numTrees = 50; // Number of trees to create
+function placeCorkTrees() {
     const trees = [];
 
-    for (let i = 0; i < numTrees; i++) {
+    for (let i = 0; i < NUM_TREES; i++) {
         const tree = createCorkTree();
 
-        const posX = (Math.random() - 0.5) * TERRAIN_WIDTH * 0.8;
-        const posZ = (Math.random() - 0.5) * TERRAIN_WIDTH * 0.8;
-        const posY = 80; // Ground level
 
-        // random scale for Y axis (height), between 0.8 and 1.5 times the original height
-        const scaleY = 0.8 + Math.random() * 0.7;
+        // Place trees within a circle of radius TERRAIN_WIDTH * 0.4 centered at (0, 0)
+        const radius = TERRAIN_WIDTH * 0.48;
+        let angle = Math.random() * Math.PI * 2;
+        let r = Math.sqrt(Math.random()) * radius; // sqrt for uniform distribution
+        let posX = Math.cos(angle) * r;
+        let posZ = Math.sin(angle) * r;
+
+        for (let j = 0; j < trees.length; j++) {
+            const existingTree = trees[j];
+            const distance = existingTree.position.distanceTo(new THREE.Vector3(posX, 0, posZ));
+            if (distance < 10) // Avoid placing trees too close to each other
+            {
+                r = Math.sqrt(Math.random()) * radius; // Recalculate radius
+                posX = Math.cos(angle) * r;
+                posZ = Math.sin(angle) * r;
+                j = -1; // Restart checking from the beginning
+            }
+        }
+        // random scale for Y axis (height)
+        const scaleY = 0.8 + Math.random() * 0.3;
 
         // Random rotation around Y axis (full circle)
         const rotationY = Math.random() * Math.PI * 2;
 
+        let posY = getTerrainHeight(posX, posZ) + (CORK_TREE_HEIGHT * scaleY / 2) - 1;
+
+        console.log("Placing tree at position: ", posX, posY, posZ, " with scale Y: ", scaleY, " and rotation Y: ", rotationY);
+
         tree.position.set(posX, posY, posZ);
         tree.scale.set(1, scaleY, 1);
         tree.rotation.y = rotationY;
+
 
         trees.push(tree);
         scene.add(tree);
@@ -558,6 +601,24 @@ function createAlentejoHouse() {
 
     return house;
 
+}
+
+function getTerrainHeight(x, Z){
+    if (!terrainMesh) return 0; // Return 0 if terrain is not created yet
+    
+
+    const positionAttribute = terrainMesh.geometry.attributes.position;
+    const index = Math.floor((x + TERRAIN_WIDTH / 2) / (TERRAIN_WIDTH / TERRAIN_SEGMENTS_WIDTH)) +
+                  Math.floor((z + TERRAIN_HEIGHT / 2) / (TERRAIN_HEIGHT / TERRAIN_SEGMENTS_HEIGHT)) * TERRAIN_SEGMENTS_WIDTH;
+
+    if (index < 0 || index >= positionAttribute.count) {
+        console.warn("Index out of bounds for terrain height calculation.");
+        return 0;
+    }
+    console.log("Index for terrain height: ", index, "X: ", x, "z: ", z);
+    console.log("Z: ", positionAttribute.getZ(index));
+
+    return positionAttribute.getY(index);
 }
 
 function switchDirectionalLightMode() {
