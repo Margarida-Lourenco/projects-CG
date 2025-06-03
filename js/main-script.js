@@ -611,107 +611,6 @@ function placeCorkTrees() {
     return trees;
 }
 
-function createAlentejoHouse() {
-    let position = new THREE.Vector3(200, 80, -500);
-    const white = MATERIALS.house.white[currentShading];
-    const blue = MATERIALS.house.blue[currentShading];
-    const roofOrange = MATERIALS.house.orange[currentShading];
-    const dark = MATERIALS.house.dark[currentShading];
-    const width = 120;
-    const height = 40;
-    const depth = 60;
-    const house = new THREE.Group();
-    house.position.copy(position);
-
-    // Subgroups for easier material switching
-    const whiteGroup = new THREE.Group();
-    const blueGroup = new THREE.Group();
-    const orangeGroup = new THREE.Group();
-    const darkGroup = new THREE.Group();
-
-    // Corpo principal
-    const base = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), white);
-    base.position.set(0, height / 2, 0);
-    whiteGroup.add(base);
-
-    // Faixa azul na base
-    const baseTrim = new THREE.Mesh(new THREE.BoxGeometry(width + 0.1, 10, depth + 0.1), blue);
-    baseTrim.position.set(0, 5, 0);
-    blueGroup.add(baseTrim);
-
-    // Telhado duas águas (usamos cilindro rotacionado)
-    const roofGeo = new THREE.CylinderGeometry(depth / 2, depth / 2, width, 2, 1, false, 0, Math.PI);
-    const roofMesh = new THREE.Mesh(roofGeo, roofOrange);
-    roofMesh.rotation.z = Math.PI / 2;
-    roofMesh.position.set(0, height, 0); // acima da casa
-    orangeGroup.add(roofMesh);
-
-    // Janelas frontais
-    const windowY = 25;
-    const windowZ = -depth / 2 - 1;
-    const windowPositions = [-50, -20, 30, 50];
-    for (let i of windowPositions) {
-        const frame = new THREE.Mesh(new THREE.BoxGeometry(12, 12, 2), blue);
-        frame.position.set(i, windowY, windowZ);
-        const window = new THREE.Mesh(new THREE.BoxGeometry(8, 8, 1), dark);
-        window.position.set(i, windowY, windowZ - 0.5);
-        blueGroup.add(frame);
-        darkGroup.add(window);
-    }
-
-    // Porta central
-    const doorY = 12;
-    const doorZ = depth / 2 + 1;
-    const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(14, 24, 2), blue);
-    doorFrame.position.set(10, doorY + 4, -doorZ); // virada para frente
-    const door = new THREE.Mesh(new THREE.BoxGeometry(10, 20, 1), dark);
-    door.position.set(10, doorY + 4, -doorZ - 0.5);
-    blueGroup.add(doorFrame);
-    darkGroup.add(door);
-
-    // Porta lateral com cobertura
-    const sideDoor = new THREE.Mesh(new THREE.BoxGeometry(10, 20, 1), dark);
-    sideDoor.position.set(width / 2 - 10, 10, 10);
-    darkGroup.add(sideDoor);
-
-    const cover = new THREE.Mesh(new THREE.BoxGeometry(12, 1, 8), roofOrange);
-    cover.rotation.x = -Math.PI / 6;
-    cover.position.set(width / 2 - 10, 20, 10);
-    orangeGroup.add(cover);
-
-    // Chaminés
-    const chimney1 = new THREE.Mesh(new THREE.BoxGeometry(30, 30, 10), white);
-    chimney1.position.set(-20, height + 15, -23);
-    whiteGroup.add(chimney1);
-
-    const chimneyTop1 = new THREE.Mesh(new THREE.BoxGeometry(32, 4, 12), blue);
-    chimneyTop1.position.set(-20, height + 30, -23);
-    blueGroup.add(chimneyTop1);
-
-    const chimney2 = new THREE.Mesh(new THREE.BoxGeometry(30, 30, 10), white);
-    chimney2.position.set(-20, height + 15, 23);
-    whiteGroup.add(chimney2);
-
-    const chimneyTop2 = new THREE.Mesh(new THREE.BoxGeometry(32, 4, 12), blue);
-    chimneyTop2.position.set(-20, height + 30, 23);
-    blueGroup.add(chimneyTop2);
-
-    // Add subgroups to house
-    house.add(whiteGroup);
-    house.add(blueGroup);
-    house.add(orangeGroup);
-    house.add(darkGroup);
-
-    // Attach subgroups for material switching
-    house.whiteGroup = whiteGroup;
-    house.blueGroup = blueGroup;
-    house.orangeGroup = orangeGroup;
-    house.darkGroup = darkGroup;
-
-    return house;
-
-}
-
 function getTerrainHeight(x, z) {
     const positionAttribute = terrainMesh.geometry.attributes.position;
     const index = Math.floor((x + TERRAIN_WIDTH / 2) / (TERRAIN_WIDTH / TERRAIN_SEGMENTS_WIDTH)) +
@@ -722,6 +621,309 @@ function getTerrainHeight(x, z) {
         return 0;
     }
     return positionAttribute.getZ(index);
+}
+
+function createAlentejoHouse() {
+    let position = new THREE.Vector3(200, 40, -500);
+    const white = MATERIALS.house.white[currentShading];
+    const blue = MATERIALS.house.blue[currentShading];
+    const roofOrange = MATERIALS.house.orange[currentShading];
+    const house = new THREE.Group();
+    house.position.copy(position);
+
+    // Subgroups for easier material switching
+    const whiteGroup = new THREE.Group();
+    const blueGroup = new THREE.Group();
+    const orangeGroup = new THREE.Group();
+
+    whiteGroup.add(createBase());
+    blueGroup.add(createBaseTrim());
+    orangeGroup.add(createRoof());
+    blueGroup.add(createFrontWindows());
+    blueGroup.add(createFrontDoor());
+    whiteGroup.add(createSideDoor());
+    blueGroup.add(createSideWindow());
+
+    // falta adicionar as chaminés e o sofá ao grupo de cores!!!
+    house.add(createChimneys());
+    house.add(createSofa());
+
+    house.add(whiteGroup);
+    house.add(blueGroup);
+    house.add(orangeGroup);
+
+    house.whiteGroup = white;
+    house.blueGroup = blue;
+    house.orangeGroup = roofOrange;
+
+
+    return house;
+}
+
+function createBase() {
+    const geometry = new THREE.BufferGeometry();
+
+    const vertices = new Float32Array([
+        // Frente
+        -60, 0, 30,  60, 0, 30,  60, 40, 30,
+        -60, 0, 30,  60, 40, 30, -60, 40, 30,
+        // Trás
+        -60, 0, -30, -60, 40, -30, 60, 40, -30,
+        -60, 0, -30, 60, 40, -30, 60, 0, -30,
+        // Topo
+        -60, 40, -30, -60, 40, 30, 60, 40, 30,
+        -60, 40, -30, 60, 40, 30, 60, 40, -30,
+        // Fundo
+        -60, 0, -30, 60, 0, -30, 60, 0, 30,
+        -60, 0, -30, 60, 0, 30, -60, 0, 30,
+        // Direita
+        60, 0, -30, 60, 40, -30, 60, 40, 30,
+        60, 0, -30, 60, 40, 30, 60, 0, 30,
+        // Esquerda
+        -60, 0, -30, -60, 0, 30, -60, 40, 30,
+        -60, 0, -30, -60, 40, 30, -60, 40, -30
+    ]);
+
+    geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
+    geometry.computeVertexNormals();
+
+    const material = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.y = 5;
+
+    return mesh;
+}
+
+
+function createBaseTrim() {
+    const geometry = new THREE.BufferGeometry();
+
+    const vertices = new Float32Array([
+        // Frente
+        -60.05, 0, 30.05, 60.05, 0, 30.05, 60.05, 5, 30.05,
+        -60.05, 0, 30.05, 60.05, 5, 30.05, -60.05, 5, 30.05,
+        // Trás
+        -60.05, 0, -30.05, -60.05, 5, -30.05, 60.05, 5, -30.05,
+        -60.05, 0, -30.05, 60.05, 5, -30.05, 60.05, 0, -30.05,
+        // Topo
+        -60.05, 5, -30.05, -60.05, 5, 30.05, 60.05, 5, 30.05,
+        -60.05, 5, -30.05, 60.05, 5, 30.05, 60.05, 5, -30.05,
+        // Fundo
+        -60.05, 0, -30.05, 60.05, 0, -30.05, 60.05, 0, 30.05,
+        -60.05, 0, -30.05, 60.05, 0, 30.05, -60.05, 0, 30.05,
+        // Direita
+        60.05, 0, -30.05, 60.05, 5, -30.05, 60.05, 5, 30.05,
+        60.05, 0, -30.05, 60.05, 5, 30.05, 60.05, 0, 30.05,
+        // Esquerda
+        -60.05, 0, -30.05, -60.05, 0, 30.05, -60.05, 5, 30.05,
+        -60.05, 0, -30.05, -60.05, 5, 30.05, -60.05, 5, -30.05
+    ]);
+
+    geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
+    geometry.computeVertexNormals();
+
+    const material = new THREE.MeshLambertMaterial({ color: 0x005bbb });
+    const mesh = new THREE.Mesh(geometry, material);
+
+    return mesh;
+}
+
+
+function createRoof() {
+    const roofOrange = new THREE.MeshLambertMaterial({ color: 0xffa500 });
+    const geometry = new THREE.CylinderGeometry(30, 30, 120, 2, 1, false, 0, Math.PI);
+    const mesh = new THREE.Mesh(geometry, roofOrange);
+    mesh.rotation.z = Math.PI / 2;
+    mesh.position.set(0, 45, 0);
+    return mesh;
+}
+
+
+function createWindowFrame() {
+    const geometry = new THREE.BufferGeometry();
+    const vertices = new Float32Array([
+        // Frente
+        -6, -6, 1, 6, -6, 1, 6, 6, 1,
+        -6, -6, 1, 6, 6, 1, -6, 6, 1,
+        // Trás
+        -6, -6, -1, -6, 6, -1, 6, 6, -1,
+        -6, -6, -1, 6, 6, -1, 6, -6, -1,
+    ]);
+    geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
+    geometry.computeVertexNormals();
+
+    const material = new THREE.MeshLambertMaterial({ color: 0x005bbb });
+    return new THREE.Mesh(geometry, material);
+}
+
+function createFrontWindows() {
+    const group = new THREE.Group();
+    const positions = [-50, -10, 30, 50];
+    for (let x of positions) {
+        const win = createWindowFrame();
+        win.position.set(x, 25, -30);
+        group.add(win);
+    }
+    return group;
+}
+
+
+function createFrontDoor() {
+    const geometry = new THREE.BufferGeometry();
+    const vertices = new Float32Array([
+        // Frente
+        -7, -12, 1, 7, -12, 1, 7, 12, 1,
+        -7, -12, 1, 7, 12, 1, -7, 12, 1,
+        // Trás
+        -7, -12, -1, -7, 12, -1, 7, 12, -1,
+        -7, -12, -1, 7, 12, -1, 7, -12, -1,
+        // Laterais, topo e base...
+        -7, -12, -1, -7, -12, 1, -7, 12, 1,
+        -7, -12, -1, -7, 12, 1, -7, 12, -1,
+
+        7, -12, -1, 7, 12, -1, 7, 12, 1,
+        7, -12, -1, 7, 12, 1, 7, -12, 1,
+
+        -7, 12, -1, -7, 12, 1, 7, 12, 1,
+        -7, 12, -1, 7, 12, 1, 7, 12, -1,
+
+        -7, -12, -1, 7, -12, -1, 7, -12, 1,
+        -7, -12, -1, 7, -12, 1, -7, -12, 1,
+    ]);
+    geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
+    geometry.computeVertexNormals();
+
+    const material = new THREE.MeshLambertMaterial({ color: 0x005bbb });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(10, 12, -31);
+    return mesh;
+}
+
+function createSideDoor() {
+    const geometry = new THREE.BufferGeometry();
+    const vertices = new Float32Array([
+        // Frente
+        -6, -12, 5, 6, -12, 5, 6, 12, 5,
+        -6, -12, 5, 6, 12, 5, -6, 12, 5,
+        // Trás
+        -6, -12, -5, -6, 12, -5, 6, 12, -5,
+        -6, -12, -5, 6, 12, -5, 6, -12, -5,
+        // Laterais, topo e base...
+        -6, -12, -5, -6, -12, 5, -6, 12, 5,
+        -6, -12, -5, -6, 12, 5, -6, 12, -5,
+
+        6, -12, -5, 6, 12, -5, 6, 12, 5,
+        6, -12, -5, 6, 12, 5, 6, -12, 5,
+
+        -6, 12, -5, -6, 12, 5, 6, 12, 5,
+        -6, 12, -5, 6, 12, 5, 6, 12, -5,
+
+        -6, -12, -5, 6, -12, -5, 6, -12, 5,
+        -6, -12, -5, 6, -12, 5, -6, -12, 5,
+    ]);
+    geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
+    geometry.computeVertexNormals();
+
+    const material = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.rotation.y = Math.PI / 2;
+    mesh.position.set(-60, 12, -20);
+    return mesh;
+}
+
+function createSideWindow() {
+    const window = createWindowFrame();
+    window.rotation.y = Math.PI / 2;
+    window.position.set(-60, 25, 0);
+    return window;
+}
+
+
+function createBox(width, height, depth, material) {
+    const geometry = new THREE.BufferGeometry();
+    const w = width / 2, h = height / 2, d = depth / 2;
+
+    const vertices = new Float32Array([
+        // Frente
+        -w, -h, d,  w, -h, d,  w, h, d,
+        -w, -h, d,  w, h, d,  -w, h, d,
+        // Trás
+        -w, -h, -d,  -w, h, -d,  w, h, -d,
+        -w, -h, -d,  w, h, -d,  w, -h, -d,
+        // Esquerda
+        -w, -h, -d,  -w, -h, d,  -w, h, d,
+        -w, -h, -d,  -w, h, d,  -w, h, -d,
+        // Direita
+        w, -h, -d,  w, h, -d,  w, h, d,
+        w, -h, -d,  w, h, d,  w, -h, d,
+        // Topo
+        -w, h, -d,  -w, h, d,  w, h, d,
+        -w, h, -d,  w, h, d,  w, h, -d,
+        // Base
+        -w, -h, -d,  w, -h, -d,  w, -h, d,
+        -w, -h, -d,  w, -h, d,  -w, -h, d,
+    ]);
+
+    geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
+    geometry.computeVertexNormals();
+
+    return new THREE.Mesh(geometry, material);
+}
+
+function createChimneys() {
+    const group = new THREE.Group();
+
+    const white = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const blue = new THREE.MeshLambertMaterial({ color: 0x005bbb });
+
+    const chimney1 = createBox(30, 30, 10, white);
+    chimney1.position.set(-30, 55, -23);
+    group.add(chimney1);
+
+    const chimneyTop1 = createBox(32, 4, 12, blue);
+    chimneyTop1.position.set(-30, 70, -23);
+    group.add(chimneyTop1);
+
+    const chimney2 = createBox(30, 30, 10, white);
+    chimney2.position.set(-20, 55, 23);
+    group.add(chimney2);
+
+    const chimneyTop2 = createBox(32, 4, 12, blue);
+    chimneyTop2.position.set(-20, 70, 23);
+    group.add(chimneyTop2);
+
+    return group;
+}
+
+
+function createSofa() {
+    const group = new THREE.Group();
+
+    const blue = new THREE.MeshLambertMaterial({ color: 0x005bbb });
+    const white = new THREE.MeshLambertMaterial({ color: 0xffffff });
+
+    const base = createBox(15, 5, 10, blue);
+    base.position.set(0, -2.5, 0);
+    group.add(base);
+
+    const seat = createBox(13, 1, 8, white);
+    seat.position.set(0, 0, 0);
+    group.add(seat);
+
+    const back = createBox(15, 10, 5, blue);
+    back.position.set(0, 0, 4);
+    group.add(back);
+
+    const arm1 = createBox(5, 10, 10, blue);
+    arm1.position.set(-10, 0, 0);
+    group.add(arm1);
+
+    const arm2 = createBox(5, 10, 10, blue);
+    arm2.position.set(10, 0, 0);
+    group.add(arm2);
+
+    group.position.set(-30, 5, -35);
+    return group;
 }
 
 function switchDirectionalLightMode() {
