@@ -2,16 +2,19 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { VRButton } from "three/addons/webxr/VRButton.js";
 import { createFloralFieldTexture, createStarrySkyTexture, createCheeseTexture } from './procedural-textures.js';
+import { StereoCamera } from "three";
 
 let scene, camera, renderer, controls;
 let terrainMesh, moonMesh, directionalLight, houseMesh, skydomeMesh; // Store reference to skydome
 let corkTreeMeshes = []; // Store references to cork tree groups
 let ufo, ufoGroup;
 let ufoBeamMesh, ufoLights = [];
-let stereoCamera, fixedCamera;
+let fixedCamera, orbitalCamera, stereoCamera, vrCamera; // Cameras for different views
+let cameras = [fixedCamera, orbitalCamera]; // Array to hold all cameras
 let keyStates = {}; // To store the state of pressed keys
+let userRig;
 
-const debugFlag = false; // Set to true to enable scene helpers
+const debugFlag = true; // Set to true to enable scene helpers
 let isCheese = false // Is the moon made of cheese?
 let cheese_easter_egg_counter = isCheese ? 20 : 0; // Counter for cheese easter egg
 
@@ -41,7 +44,7 @@ const CORK_TREE_HEIGHT = 70; // Height of the cork tree in world units
 const MOON_SCALE = 0.025; // Radius as percentage of terrain width
 const SKYDOME_SCALE = 0.5; // Radius as percentage of terrain width
 const MOON_ALTITUDE = 1 * Math.PI / 6; // Angle of moon above terrain relative to XZ plane
-const MOON_ANGLE = -1 * Math.PI / 3; // Angle of moon in radians relative to x axis
+const MOON_ANGLE = 2 * Math.PI / 3; // Angle of moon in radians relative to x axis
 const MOONLIGHT_INTENSITY = 0.7; // Intensity of the moonlight 0-1
 
 const NUM_STARS = 2000; // Number of stars in the starry sky texture
@@ -52,7 +55,7 @@ const SKY_TEXTURE_WIDTH = 4096 * 2; // Width of the starry sky texture
 const SKY_TEXTURE_HEIGHT = SKY_TEXTURE_WIDTH / 2; // Mapping is 2:1
 // Smaller height voids stretching at equator but more distortion at poles
 
-const UFO_ALTITUDE = 600; // Height of UFO above terrain
+const UFO_ALTITUDE = 300; // Height of UFO above terrain
 const UFO_ROTATION_SPEED = 0.02; // radians per frame
 const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibility)
 const NUM_LIGHTS = 8; // Number of lights on the UFO
@@ -163,28 +166,46 @@ function createAllMaterials() {
 }
 
 function createCameras() {
-    // Fixed camera: looks at the house from a fixed position
     fixedCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4);
-    // Place the camera a bit back and above, looking at the house
     fixedCamera.position.set(HOUSE_POSITION.x + 100, HOUSE_POSITION.y + 80, HOUSE_POSITION.z - 400);
     fixedCamera.lookAt(HOUSE_POSITION.x, HOUSE_POSITION.y + UFO_ALTITUDE /3, HOUSE_POSITION.z);
 
-    stereoCamera = new THREE.StereoCamera(); // Stereo camera for VR
+    orbitalCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4);
+    orbitalCamera.position.set(0, TERRAIN_WIDTH * 0.5, TERRAIN_WIDTH * 0.5); // Adjusted camera for new scale
 
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4); // Adjusted far clipping plane
-    camera.position.set(0, TERRAIN_WIDTH * 0.5, TERRAIN_WIDTH * 0.5); // Adjusted camera for new scale
+    vrCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4);
+
+    // User rig for VR: move to fixedCamera's world position and orientation
+    userRig = new THREE.Group();
+    userRig.add(vrCamera);
+    scene.add(userRig);
+
+    userRig.position.copy(fixedCamera.position);
+    userRig.quaternion.copy(fixedCamera.quaternion);
+    userRig.updateMatrixWorld(true);
+
+    // Debug: log rig and camera positions
+    if (debugFlag) {
+        console.log("VR Camera position: ", userRig.position);
+        console.log("VR Camera quaternion: ", userRig.quaternion);
+        userRig.add(
+            new THREE.AxesHelper(20),
+            new THREE.Mesh( new THREE.BoxGeometry(5, 20, 5), 
+            new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true })
+            )
+        ); // Make user rig visible in the scene
+    }
+    scene.add(userRig);
 }
-
 
 function init() {
     createAllMaterials();
-    createCameras();
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
     if (debugFlag) {
         const axesHelper = new THREE.AxesHelper(1000);
         scene.add(axesHelper);
-        //grid is currently slightly misaligned with the texture repetition pattern
+        //grid is currently slightly misaligned with the texture repetition pattern seams
         const gridHelper = new THREE.GridHelper(TERRAIN_WIDTH, TERRAIN_WIDTH / TEXTURE_WORLD_SIZE);
         scene.add(gridHelper);
         axesHelper.position.set(0, 0, 0);
@@ -197,11 +218,22 @@ function init() {
     document.body.appendChild(renderer.domElement);
     document.body.appendChild( VRButton.createButton( renderer ));
 
-    controls = new OrbitControls(camera, renderer.domElement);
+    // Listen for VR session start/end to switch cameras
+    renderer.xr.addEventListener('sessionstart', function() {
+        camera = vrCamera;
+    });
+    renderer.xr.addEventListener('sessionend', function() {
+        camera = fixedCamera; // or orbitalCamera, as desired
+    });
+
+    createCameras();
+    controls = new OrbitControls(orbitalCamera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.target.set(0, 100, 0);
     controls.update(); // Required after changing the target
+
+    camera = orbitalCamera; // Set the default camera to fixedCamera so VR starts next to the house
 
     createMoon(); // Moon position will be updated within this function based on TERRAIN_WIDTH
     createDirectionalLight(); // Light position will be updated
@@ -231,7 +263,7 @@ function init() {
     } );
 
     ufo = createUFO(); // Assign created UFO to global variable
-    ufo.position.set(0, UFO_ALTITUDE, 0); // Position UFO above the terrain
+    ufo.position.set(HOUSE_POSITION.x, UFO_ALTITUDE, HOUSE_POSITION.z - 40);
 
     houseMesh = createAlentejoHouse();
     scene.add(houseMesh);
@@ -1094,12 +1126,17 @@ function onResize() {
     }
 }
 
-let vrMode = false;
-
 function onKeyDown(e) {
     switch (e.keyCode) {
         case 55: //7
-            camera = fixedCamera;
+            if (camera === fixedCamera) {
+                camera = orbitalCamera;
+                if (controls) controls.enabled = true;
+            }
+            else if(camera != vrCamera) {
+                camera = fixedCamera;
+                if (controls) controls.enabled = false;
+            }
             break;
 
         case 68: //D
@@ -1218,15 +1255,9 @@ function updateUFOMovement() {
 
 }
 
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
 function animate() {
     requestAnimationFrame(animate);
-    updateUFOMovement(); // Update UFO movement each frame
+    updateUFOMovement();
     controls.update();
     renderer.render(scene, camera);
 }
