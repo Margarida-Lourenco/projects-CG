@@ -33,6 +33,8 @@ const NUM_FLOWERS = 300; // Number of flowers in the floral field texture
 const FLOWER_SIZE = 1; // Minimum flower size in pixels
 const FLOWER_VARIATION = 2; // Variation in flower size in pixels
 
+const HOUSE_POSITION = new THREE.Vector3(200, 40, -500); // House position as a constant
+
 const NUM_TREES = 50; // Number of cork trees to place in the scene
 const CORK_TREE_HEIGHT = 70; // Height of the cork tree in world units
 
@@ -561,43 +563,49 @@ function createCorkTreeTop(radius) {
 
 function placeCorkTrees() {
     const trees = [];
+    const MIN_TREE_DISTANCE = 70; // Minimum distance between trees (adjust as needed)
+    const HOUSE_RADIUS = 180; // Minimum distance from house (adjust as needed)
+    const housePos = HOUSE_POSITION.clone(); // Use the constant
     for (let i = 0; i < NUM_TREES; i++) {
         const tree = createCorkTree();
-
-
-        // Place trees within a circle of radius TERRAIN_WIDTH * 0.4 centered at (0, 0)
         const radius = TERRAIN_WIDTH * 0.48;
-        let angle = Math.random() * Math.PI * 2;
-        let r = Math.sqrt(Math.random()) * radius; // sqrt for uniform distribution
-        let posX = Math.cos(angle) * r;
-        let posZ = Math.sin(angle) * r;
-
-        for (let j = 0; j < trees.length; j++) {
-            const existingTree = trees[j];
-            const distance = existingTree.position.distanceTo(new THREE.Vector3(posX, 0, posZ));
-            if (distance < 10) // Avoid placing trees too close to each other
-            {
-                r = Math.sqrt(Math.random()) * radius; // Recalculate radius
-                posX = Math.cos(angle) * r;
-                posZ = Math.sin(angle) * r;
-                j = -1; // Restart checking from the beginning
+        let valid = false;
+        let posX, posZ, posY;
+        let attempts = 0;
+        while (!valid && attempts < 100) {
+            let angle = Math.random() * Math.PI * 2;
+            let r = Math.sqrt(Math.random()) * radius;
+            posX = Math.cos(angle) * r;
+            posZ = Math.sin(angle) * r;
+            posY = getTerrainHeight(posX, posZ) - 0.6;
+            const treePos = new THREE.Vector3(posX, 0, posZ);
+            // Check distance to house
+            if (treePos.distanceTo(housePos) < HOUSE_RADIUS) {
+                attempts++;
+                continue;
             }
+            // Check distance to all other trees
+            let tooClose = false;
+            for (let j = 0; j < trees.length; j++) {
+                const existingTree = trees[j];
+                if (existingTree.position.distanceTo(treePos) < MIN_TREE_DISTANCE) {
+                    tooClose = true;
+                    break;
+                }
+            }
+            if (tooClose) {
+                attempts++;
+                continue;
+            }
+            valid = true;
         }
         // random scale for Y axis (height)
         const scaleY = 0.8 + Math.random() * 0.3;
-
         // Random rotation around Y axis (full circle)
         const rotationY = Math.random() * Math.PI * 2;
-
-        let posY = getTerrainHeight(posX, posZ) - 0.6;
-
-        if (debugFlag) console.log("Placing tree at position: ", posX, posY, posZ, " with scale Y: ", scaleY, " and rotation Y: ", rotationY);
-
         tree.position.set(posX, posY, posZ);
         tree.scale.set(1, scaleY, 1);
         tree.rotation.y = rotationY;
-
-
         trees.push(tree);
         scene.add(tree);
     }
@@ -618,9 +626,8 @@ function getTerrainHeight(x, z) {
 }
 
 function createAlentejoHouse() {
-    let position = new THREE.Vector3(200, 40, -500);
     const house = new THREE.Group();
-    house.position.copy(position);
+    house.position.copy(HOUSE_POSITION);
 
     // Subgroups for easier material switching
     const whiteGroup = new THREE.Group();
