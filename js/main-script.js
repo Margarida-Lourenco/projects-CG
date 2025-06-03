@@ -10,6 +10,7 @@ let terrainMesh, moonMesh, directionalLight, houseMesh, skydomeMesh; // Store re
 let corkTreeMeshes = []; // Store references to cork tree groups
 let ufo, ufoGroup;
 let ufoBeamMesh, ufoLights = [];
+let stereoCamera, fixedCamera;
 let keyStates = {}; // To store the state of pressed keys
 
 const debugFlag = false; // Set to true to enable scene helpers
@@ -165,10 +166,21 @@ function createAllMaterials() {
     MATERIALS.house.dark.basic = new THREE.MeshBasicMaterial({ color: 0x333333 });
 }
 
+function createCameras() {
+    fixedCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4);
+    fixedCamera.position.set(0, TERRAIN_WIDTH * 0.5, TERRAIN_WIDTH * 0.5); // Adjusted camera for new scale
+    fixedCamera.lookAt(0, 0, 0); 
+
+    stereoCamera = new THREE.StereoCamera(); // Stereo camera for VR
+
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4); // Adjusted far clipping plane
+    camera.position.set(0, TERRAIN_WIDTH * 0.5, TERRAIN_WIDTH * 0.5); // Adjusted camera for new scale
+}
 
 
 function init() {
     createAllMaterials();
+    createCameras();
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
     if (debugFlag) {
@@ -180,12 +192,12 @@ function init() {
         axesHelper.position.set(0, 0, 0);
         gridHelper.position.set(0, 0, 0);
     }
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4); // Adjusted far clipping plane
-    camera.position.set(0, TERRAIN_WIDTH * 0.5, TERRAIN_WIDTH * 0.5); // Adjusted camera for new scale
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.xr.enabled = true;
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
+    document.body.appendChild( VRButton.createButton( renderer ));
 
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -213,9 +225,12 @@ function init() {
     });
 
     // Event Listeners
-    window.addEventListener('resize', onWindowResize, false);
-    window.addEventListener('keydown', onKeyDown, false); // Added keydown listener for light toggle
-    window.addEventListener('keyup', onKeyUp, false); // Added keyup listener for movement
+    window.addEventListener("resize", onResize);
+    window.addEventListener('keydown', onKeyDown); 
+    window.addEventListener('keyup', onKeyUp); 
+    renderer.setAnimationLoop( function () {
+        renderer.render( scene, camera );
+    } );
 
     ufo = createUFO(); // Assign created UFO to global variable
     ufo.position.set(0, UFO_ALTITUDE, 0); // Position UFO above the terrain
@@ -817,8 +832,21 @@ function toggleLighting() {
     applyShadingToScene();
 }
 
+function onResize() {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  if (window.innerHeight > 0 && window.innerWidth > 0) {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+  }
+}
+
 function onKeyDown(e) {
     switch (e.keyCode) {
+        case 55: //7
+            camera = fixedCamera;
+            break;
+
         case 68: //D
         case 100: //d
             switchDirectionalLightMode();
