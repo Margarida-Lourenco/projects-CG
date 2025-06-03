@@ -11,7 +11,7 @@ let ufoBeamMesh, ufoLights = [];
 let stereoCamera, fixedCamera;
 let keyStates = {}; // To store the state of pressed keys
 
-const debugFlag = true; // Set to true to enable scene helpers
+const debugFlag = false; // Set to true to enable scene helpers
 let isCheese = false // Is the moon made of cheese?
 let cheese_easter_egg_counter = isCheese ? 20 : 0; // Counter for cheese easter egg
 
@@ -628,16 +628,17 @@ function createAlentejoHouse() {
     const orangeGroup = new THREE.Group();
 
     whiteGroup.add(createBase());
+    whiteGroup.add(createChimneyBottom(-30, 55, -23));
+    blueGroup.add(createChimneyTop(-30, 70, -23));
+    whiteGroup.add(createChimneyBottom(-20, 55, 23));
+    blueGroup.add(createChimneyTop(-20, 70, 23));
     blueGroup.add(createBaseTrim());
     orangeGroup.add(createRoof());
     blueGroup.add(createFrontWindows());
     blueGroup.add(createFrontDoor());
     whiteGroup.add(createSideDoor());
     blueGroup.add(createSideWindow());
-
-    // falta adicionar as chaminés e o sofá ao grupo de cores!!!
-    house.add(createChimneys());
-    house.add(createSofa());
+    blueGroup.add(createSofa());
 
     house.add(whiteGroup);
     house.add(blueGroup);
@@ -860,43 +861,40 @@ function createBox(width, height, depth, material) {
     return new THREE.Mesh(geometry, material);
 }
 
-function createChimneys() {
-    const group = new THREE.Group();
-
-    const white = MATERIALS.house.white[currentShading];
+function createChimneyTop(x, y, z){
+    const chimneyTop = new THREE.Group();
     const blue = MATERIALS.house.blue[currentShading];
 
-    const chimney1 = createBox(30, 30, 10, white);
-    chimney1.position.set(-30, 55, -23);
-    group.add(chimney1);
+     const chimneyBlue = createBox(32, 4, 12, blue);
+    chimneyBlue.position.set(x, y, z);
+    chimneyTop.add(chimneyBlue);
 
-    const chimneyTop1 = createBox(32, 4, 12, blue);
-    chimneyTop1.position.set(-30, 70, -23);
-    group.add(chimneyTop1);
-
-    const chimney2 = createBox(30, 30, 10, white);
-    chimney2.position.set(-20, 55, 23);
-    group.add(chimney2);
-
-    const chimneyTop2 = createBox(32, 4, 12, blue);
-    chimneyTop2.position.set(-20, 70, 23);
-    group.add(chimneyTop2);
-
-    return group;
+    return chimneyTop;
 }
+function createChimneyBottom(x, y, z) {
+    const chimneyBottom = new THREE.Group();
+
+    const white = MATERIALS.house.white[currentShading];
+
+    const chimneyWhite = createBox(30, 30, 10, white);
+    chimneyWhite.position.set(x, y, z);
+    chimneyBottom.add(chimneyWhite);
+
+    return chimneyBottom;
+}
+
 
 
 function createSofa() {
     const group = new THREE.Group();
 
     const blue = MATERIALS.house.blue[currentShading];
-    const white = MATERIALS.house.white[currentShading];
 
     const base = createBox(15, 5, 10, blue);
     base.position.set(0, -2.5, 0);
     group.add(base);
 
-    const seat = createBox(13, 1, 8, white);
+    const seat = createBox(13, 1, 8, blue);
     seat.position.set(0, 0, 0);
     group.add(seat);
 
