@@ -731,10 +731,32 @@ function createBaseTrim() {
 
 function createRoof() {
     const roofOrange = MATERIALS.house.orange[currentShading];
-    const geometry = new THREE.CylinderGeometry(30, 30, 120, 2, 1, false, 0, Math.PI);
+    const geometry = new THREE.BufferGeometry();
+    const vertices = new Float32Array([
+        // Base
+        -60, 40, -30,   -60, 40, 30,   60, 40, 30,
+        -60, 40, -30,   60, 40, 30,   60, 40, -30,
+        
+        // Frontal and back triangles
+        60, 70, 0,   60, 40, 30,   60, 40, -30,
+        -60, 70, 0,  -60, 40, -30,   -60, 40, 30,
+
+        // Lateral rectangles
+        // Right   
+        -60, 70, 0,   60, 40, 30,   60, 70, 0,
+        -60, 70, 0,  -60, 40, 30,   60, 40, 30,
+
+        // Left slope
+        -60, 70, 0,   60, 70, 0,    60, 40, -30,
+        -60, 70, 0,   60, 40, -30,  -60, 40, -30,
+        
+    ]);
+    
+    geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
+    geometry.computeVertexNormals();
     const mesh = new THREE.Mesh(geometry, roofOrange);
-    mesh.rotation.z = Math.PI / 2;
-    mesh.position.set(0, 45, 0);
+    mesh.position.y = 5;
+    
     return mesh;
 }
 
