@@ -149,7 +149,7 @@ export function createCheeseTexture(
     // Create safe margins to prevent holes from being cut off at edges
     const margin = Math.ceil(maxHoleRadius * scaleFactor);
     const safeWidth = width - 2 * margin;
-    const safeHeight = height - 8 * margin;
+    const safeHeight = height - 6 * margin;
 
 
     let holes = [];
