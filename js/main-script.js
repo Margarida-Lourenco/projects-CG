@@ -11,8 +11,8 @@ let ufoBeamMesh, ufoLights = [];
 let stereoCamera, fixedCamera;
 let keyStates = {}; // To store the state of pressed keys
 
-const debugFlag = false; // Set to true to enable scene helpers
-let isCheese = true // Is the moon made of cheese?
+const debugFlag = true; // Set to true to enable scene helpers
+let isCheese = false // Is the moon made of cheese?
 let cheese_easter_egg_counter = isCheese ? 20 : 0; // Counter for cheese easter egg
 
 const TERRAIN_WIDTH = 3560;
@@ -33,8 +33,8 @@ const NUM_FLOWERS = 300; // Number of flowers in the floral field texture
 const FLOWER_SIZE = 1; // Minimum flower size in pixels
 const FLOWER_VARIATION = 2; // Variation in flower size in pixels
 
-const NUM_TREES = 200; // Number of cork trees to place in the scene
-const CORK_TREE_HEIGHT = 9; // Height of the cork tree in world units
+const NUM_TREES = 50; // Number of cork trees to place in the scene
+const CORK_TREE_HEIGHT = 70; // Height of the cork tree in world units
 
 const MOON_SCALE = 0.025; // Radius as percentage of terrain width
 const SKYDOME_SCALE = 0.5; // Radius as percentage of terrain width
@@ -50,10 +50,11 @@ const SKY_TEXTURE_WIDTH = 4096 * 2; // Width of the starry sky texture
 const SKY_TEXTURE_HEIGHT = SKY_TEXTURE_WIDTH / 2; // Mapping is 2:1
 // Smaller height voids stretching at equator but more distortion at poles
 
-const UFO_ALTITUDE = 200; // Height of UFO above terrain
+const UFO_ALTITUDE = 600; // Height of UFO above terrain
 const UFO_ROTATION_SPEED = 0.02; // radians per frame
 const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibility)
 const NUM_LIGHTS = 8; // Number of lights on the UFO
+const BEAM_RADIUS = 20; // Radius of the UFO beam
 
 const MATERIALS = {
     moon: { lambert: null, phong: null, toon: null, basic: null },
@@ -114,7 +115,7 @@ function createAllMaterials() {
 
     // Cork Tree (stem/branch: brown, top: green)
     MATERIALS.corkTree.top.lambert = new THREE.MeshLambertMaterial({ color: 0x60d417 });
-    MATERIALS.corkTree.top.phong = new THREE.MeshPhongMaterial({ color: 0x60d417, shininess: 10 });
+    MATERIALS.corkTree.top.phong = new THREE.MeshPhongMaterial({ color: 0x60d417, shininess: 80 });
     MATERIALS.corkTree.top.toon = new THREE.MeshToonMaterial({ color: 0x60d417 });
     MATERIALS.corkTree.top.basic = new THREE.MeshBasicMaterial({ color: 0x60d417 });
 
@@ -400,13 +401,13 @@ function createDirectionalLight() {
 
 function createUFO() {
     ufoGroup = new THREE.Group();
-    const bodyRadius = 20;
+    const bodyRadius = 40;
     const cockpitRadius = bodyRadius / 3;
     const cockpitFlattening = 0.75;
     const bodyFlattening = 0.25;
-    const lightRadius = bodyRadius * 0.6;
+    const lightRadius = bodyRadius * 0.75;
     const smallSphereRadius = bodyRadius * 0.05;
-    const beamRadius = lightRadius * 0.8 - smallSphereRadius;
+    const beamRadius = bodyRadius * 0.5 - smallSphereRadius;
 
     // Subgroups for easier material switching
     const bodyGroup = new THREE.Group();
@@ -434,7 +435,7 @@ function createUFO() {
     ufoBeamMesh = new THREE.Mesh(ufoBeamGeometry, MATERIALS.ufo.beam[currentShading]);
     beamGroup.add(ufoBeamMesh);
 
-    const ufoBeamLight = new THREE.SpotLight(0x00ff33, 100, UFO_ALTITUDE, Math.PI / 12, 1, 0.4); // color, intensity, distance, angle, penumbra, decay
+    const ufoBeamLight = new THREE.SpotLight(0x00ff33, 5, UFO_ALTITUDE * 1.02, Math.PI / 8, 0.8, 0); // color, intensity, distance, angle, penumbra, decay
     ufoBeamMesh.position.y = - (bodyRadius * bodyFlattening) / 2 - beamHeight / 2 + (bodyRadius * bodyFlattening * 0.5); // Position beam bottom at the body's bottom edge
     ufoBeamLight.position.set(0, 0, 0);
     ufoBeamLight.castShadow = true; // Enable shadow casting
@@ -494,7 +495,7 @@ function createUFO() {
 
 function createCorkTree() {
     const STEM_HEIGHT = CORK_TREE_HEIGHT;
-    const STEM_RADIUS = 1;
+    const STEM_RADIUS = CORK_TREE_HEIGHT / 9;
     const STEM_ROTATION = Math.PI / 10;
     const BRANCH_ROTATION = STEM_ROTATION - Math.PI / 3;
     const BRANCH_SCALE = 0.5;
