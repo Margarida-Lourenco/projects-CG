@@ -14,7 +14,7 @@ let stereoCamera, fixedCamera;
 let keyStates = {}; // To store the state of pressed keys
 
 const debugFlag = false; // Set to true to enable scene helpers
-let isCheese = false // Is the moon made of cheese?
+let isCheese = true // Is the moon made of cheese?
 let cheese_easter_egg_counter = isCheese ? 20 : 0; // Counter for cheese easter egg
 
 const TERRAIN_WIDTH = 3560;
@@ -97,21 +97,21 @@ function createAllMaterials() {
 
     // Skydome
     const starrySkyTexture = createStarrySkyTexture(SKY_TEXTURE_WIDTH, SKY_TEXTURE_HEIGHT, NUM_STARS, STAR_SIZE, STAR_VARIATION, TWILIGHT_OVERLAP);
-    MATERIALS.skydome.lambert = new THREE.MeshLambertMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide });
-    MATERIALS.skydome.phong = new THREE.MeshPhongMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide, shininess: 10 });
-    MATERIALS.skydome.toon = new THREE.MeshToonMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide });
+    MATERIALS.skydome.lambert = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide, emissive: 0x222244, emissiveIntensity: 0.18 });
+    MATERIALS.skydome.phong = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide, shininess: 10, emissive: 0x222244, emissiveIntensity: 0.18 });
+    MATERIALS.skydome.toon = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide });
     MATERIALS.skydome.basic = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide });
 
     // Moon
-    MATERIALS.moon.lambert = new THREE.MeshLambertMaterial({ color: 0xffffaa });
-    MATERIALS.moon.phong = new THREE.MeshPhongMaterial({ color: 0xffffaa, shininess: 60 });
-    MATERIALS.moon.toon = new THREE.MeshToonMaterial({ color: 0xffffaa, emissive: 0xffffaa, emissiveIntensity: 0.6 });
+    MATERIALS.moon.lambert = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+    MATERIALS.moon.phong = new THREE.MeshBasicMaterial({ color: 0xffffaa, shininess: 60 });
+    MATERIALS.moon.toon = new THREE.MeshBasicMaterial({ color: 0xffffaa, emissive: 0xffffaa, emissiveIntensity: 0.6 });
     MATERIALS.moon.basic = new THREE.MeshBasicMaterial({ color: 0xfffff0 });
 
     const cheeseTexture = createCheeseTexture(2048, 1024, 15, 10, 20);
     MATERIALS.cheese.lambert = new THREE.MeshBasicMaterial({ map: cheeseTexture });
-    MATERIALS.cheese.phong = new THREE.MeshPhongMaterial({ map: cheeseTexture, shininess: 10 });
-    MATERIALS.cheese.toon = new THREE.MeshToonMaterial({ map: cheeseTexture, emissive: 0xffffff, emissiveIntensity: 0.2 });
+    MATERIALS.cheese.phong = new THREE.MeshBasicMaterial({ map: cheeseTexture, shininess: 10 });
+    MATERIALS.cheese.toon = new THREE.MeshBasicMaterial({ map: cheeseTexture, emissive: 0xffffff, emissiveIntensity: 0.2 });
     MATERIALS.cheese.basic = new THREE.MeshBasicMaterial({ map: cheeseTexture });
     // If cheese moon is enabled, replace the default moon material
 
@@ -239,7 +239,7 @@ function init() {
     scene.add(houseMesh);
     scene.add(ufo);
 
-
+    applyShadingToScene();
     animate();
 }
 
@@ -595,7 +595,7 @@ function placeCorkTrees() {
         // Random rotation around Y axis (full circle)
         const rotationY = Math.random() * Math.PI * 2;
 
-        let posY = getTerrainHeight(posX, posZ) - 1;
+        let posY = getTerrainHeight(posX, posZ) - 0.6;
 
         if (debugFlag) console.log("Placing tree at position: ", posX, posY, posZ, " with scale Y: ", scaleY, " and rotation Y: ", rotationY);
 
