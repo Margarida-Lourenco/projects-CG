@@ -6,12 +6,14 @@ import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { createFloralFieldTexture, createStarrySkyTexture, createCheeseTexture} from './procedural-textures.js';
 
 let scene, camera, renderer, controls;
-let terrainMesh, moonMesh, directionalLight;
+let terrainMesh, moonMesh, directionalLight, houseMesh, skydomeMesh; // Store reference to skydome
+let corkTreeMeshes = []; // Store references to cork tree groups
 let ufo, ufoGroup; 
 let ufoBeamMesh, ufoLights = []; 
 let keyStates = {}; // To store the state of pressed keys
 
-const debugFlag = true; // Set to true to enable scene helpers
+const debugFlag = false; // Set to true to enable scene helpers
+const IS_CHEESE = true // Is the moon made of cheese?
 
 const TERRAIN_WIDTH = 3560; 
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
@@ -39,7 +41,6 @@ const SKYDOME_SCALE = 0.5; // Radius as percentage of terrain width
 const MOON_ALTITUDE = 1 * Math.PI / 6; // Angle of moon above terrain relative to XZ plane
 const MOON_ANGLE = -1 * Math.PI / 3; // Angle of moon in radians relative to x axis
 const MOONLIGHT_INTENSITY = 0.7; // Intensity of the moonlight 0-1
-const IS_CHEESE = false // Is the moon made of cheese?
 
 const NUM_STARS = 2000; // Number of stars in the starry sky texture
 const STAR_SIZE = 0.1; // Minimum star size
@@ -54,7 +55,119 @@ const UFO_ROTATION_SPEED = 0.02; // radians per frame
 const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibility)
 const NUM_LIGHTS = 8; // Number of lights on the UFO
 
+const MATERIALS = {
+    moon: { lambert: null, phong: null, toon: null, basic: null },
+    floral: { lambert: null, phong: null, toon: null, basic: null },
+    skydome: { lambert: null, phong: null, toon: null, basic: null },
+    terrain: { lambert: null, phong: null, toon: null, basic: null },
+    corkTree: { 
+        top: {lambert: null, phong: null, toon: null, basic: null },
+        trunk: { lambert: null, phong: null, toon: null, basic: null }
+    },
+    ufo: {
+        body: { lambert: null, phong: null, toon: null, basic: null },
+        cockpit: { lambert: null, phong: null, toon: null, basic: null },
+        beam: { lambert: null, phong: null, toon: null, basic: null },
+        lights: { lambert: null, phong: null, toon: null, basic: null }
+    },
+    house: {
+        white: { lambert: null, phong: null, toon: null, basic: null },
+        blue: { lambert: null, phong: null, toon: null, basic: null },
+        orange: { lambert: null, phong: null, toon: null, basic: null },
+        dark: { lambert: null, phong: null, toon: null, basic: null }
+    },
+    cheese: { lambert: null, phong: null, toon: null, basic: null }
+};
+
+let currentShading = 'toon'; // 'lambert', 'phong', 'toon'
+let lightingEnabled = true;
+
+function createAllMaterials() {
+    // Terrain
+    const floralTexture = createFloralFieldTexture(TERRAIN_TEXTURE_WIDTH, TERRAIN_TEXTURE_HEIGHT, NUM_FLOWERS, FLOWER_SIZE, FLOWER_VARIATION);
+    floralTexture.wrapS = THREE.RepeatWrapping;
+    floralTexture.wrapT = THREE.RepeatWrapping;
+    floralTexture.repeat.set(TERRAIN_WIDTH / TEXTURE_WORLD_SIZE, TERRAIN_HEIGHT / TEXTURE_WORLD_SIZE);
+    MATERIALS.terrain.lambert = new THREE.MeshLambertMaterial({ map: floralTexture, color: 0xffffff, side: THREE.FrontSide });
+    MATERIALS.terrain.phong = new THREE.MeshPhongMaterial({ map: floralTexture, color: 0xffffff, side: THREE.FrontSide, shininess: 30 });
+    MATERIALS.terrain.toon = new THREE.MeshToonMaterial({ map: floralTexture, color: 0xffffff, side: THREE.FrontSide });
+    MATERIALS.terrain.basic = new THREE.MeshBasicMaterial({ map: floralTexture, color: 0xffffff, side: THREE.FrontSide });
+
+    // Skydome
+    const starrySkyTexture = createStarrySkyTexture(SKY_TEXTURE_WIDTH, SKY_TEXTURE_HEIGHT, NUM_STARS, STAR_SIZE, STAR_VARIATION, TWILIGHT_OVERLAP);
+    MATERIALS.skydome.lambert = new THREE.MeshLambertMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide});
+    MATERIALS.skydome.phong = new THREE.MeshPhongMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide, shininess: 10 });
+    MATERIALS.skydome.toon = new THREE.MeshToonMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide });
+    MATERIALS.skydome.basic = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide});
+
+    // Moon
+    MATERIALS.moon.lambert = new THREE.MeshLambertMaterial({ color: 0xffffaa });
+    MATERIALS.moon.phong = new THREE.MeshPhongMaterial({ color: 0xffffaa, shininess: 60 });
+    MATERIALS.moon.toon = new THREE.MeshToonMaterial({ color: 0xffffaa, emissive: 0xffffaa, emissiveIntensity: 0.6 });
+    MATERIALS.moon.basic = new THREE.MeshBasicMaterial({ color: 0xfffff0 });
+
+    const cheeseTexture = createCheeseTexture(2048, 1024, 15, 10 ,20);
+    MATERIALS.cheese.lambert = new THREE.MeshBasicMaterial({ map: cheeseTexture });
+    MATERIALS.cheese.phong = new THREE.MeshPhongMaterial({ map: cheeseTexture, shininess: 10 });
+    MATERIALS.cheese.toon = new THREE.MeshToonMaterial({ map: cheeseTexture, emissive: 0xffffff, emissiveIntensity: 0.2});
+    MATERIALS.cheese.basic = new THREE.MeshBasicMaterial({ map: cheeseTexture });
+    // If cheese moon is enabled, replace the default moon material
+
+    // Cork Tree (stem/branch: brown, top: green)
+    MATERIALS.corkTree.top.lambert = new THREE.MeshLambertMaterial({ color: 0x60d417 });
+    MATERIALS.corkTree.top.phong = new THREE.MeshPhongMaterial({ color: 0x60d417, shininess: 10 });
+    MATERIALS.corkTree.top.toon = new THREE.MeshToonMaterial({ color: 0x60d417 });
+    MATERIALS.corkTree.top.basic = new THREE.MeshBasicMaterial({ color: 0x60d417 });
+
+    MATERIALS.corkTree.trunk.lambert = new THREE.MeshLambertMaterial({ color: 0x8b4513 });
+    MATERIALS.corkTree.trunk.phong = new THREE.MeshPhongMaterial({ color: 0x8b4513, shininess: 10 });
+    MATERIALS.corkTree.trunk.toon = new THREE.MeshToonMaterial({ color: 0x8b4513 });
+    MATERIALS.corkTree.trunk.basic = new THREE.MeshBasicMaterial({ color: 0x8b4513 });
+
+    // UFO body
+    MATERIALS.ufo.body.lambert = new THREE.MeshLambertMaterial({ color: 0x444444 });
+    MATERIALS.ufo.body.phong = new THREE.MeshPhongMaterial({ color: 0x444444, shininess: 100 });
+    MATERIALS.ufo.body.toon = new THREE.MeshToonMaterial({ color: 0x444444 });
+    MATERIALS.ufo.body.basic = new THREE.MeshBasicMaterial({ color: 0x444444 });
+    // UFO cockpit
+    MATERIALS.ufo.cockpit.lambert = new THREE.MeshLambertMaterial({ color: 0x00ff33 });
+    MATERIALS.ufo.cockpit.phong = new THREE.MeshPhongMaterial({ color: 0x00ff33, shininess: 100 });
+    MATERIALS.ufo.cockpit.toon = new THREE.MeshToonMaterial({ color: 0x00ff33 });
+    MATERIALS.ufo.cockpit.basic = new THREE.MeshBasicMaterial({ color: 0x00ff33 });
+    // UFO beam
+    MATERIALS.ufo.beam.lambert = new THREE.MeshLambertMaterial({ color: 0x00ff33});
+    MATERIALS.ufo.beam.phong = new THREE.MeshPhongMaterial({ color: 0x00ff33, shininess: 100});
+    MATERIALS.ufo.beam.toon = new THREE.MeshToonMaterial({ color: 0x00ff33});
+    MATERIALS.ufo.beam.basic = new THREE.MeshBasicMaterial({ color: 0x00ff33});
+    // UFO lights
+    MATERIALS.ufo.lights.lambert = new THREE.MeshLambertMaterial({ color: 0x00ff33, emissive: 0x00ff33, emissiveIntensity: 0.8 });
+    MATERIALS.ufo.lights.phong = new THREE.MeshPhongMaterial({ color: 0x00ff33, emissive: 0x00ff33, shininess: 100 });
+    MATERIALS.ufo.lights.toon = new THREE.MeshToonMaterial({ color: 0x00ff33 });
+    MATERIALS.ufo.lights.basic = new THREE.MeshBasicMaterial({ color: 0x00ff33 });
+
+    // House (white walls, blue trim, orange roof, dark windows/doors)
+    MATERIALS.house.white.lambert = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    MATERIALS.house.white.phong = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 30 });
+    MATERIALS.house.white.toon = new THREE.MeshToonMaterial({ color: 0xffffff });
+    MATERIALS.house.white.basic = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    MATERIALS.house.blue.lambert = new THREE.MeshLambertMaterial({ color: 0x005bbb });
+    MATERIALS.house.blue.phong = new THREE.MeshPhongMaterial({ color: 0x005bbb, shininess: 30 });
+    MATERIALS.house.blue.toon = new THREE.MeshToonMaterial({ color: 0x005bbb });
+    MATERIALS.house.blue.basic = new THREE.MeshBasicMaterial({ color: 0x005bbb });
+    MATERIALS.house.orange.lambert = new THREE.MeshLambertMaterial({ color: 0xffa500 });
+    MATERIALS.house.orange.phong = new THREE.MeshPhongMaterial({ color: 0xffa500, shininess: 30 });
+    MATERIALS.house.orange.toon = new THREE.MeshToonMaterial({ color: 0xffa500 });
+    MATERIALS.house.orange.basic = new THREE.MeshBasicMaterial({ color: 0xffa500 });
+    MATERIALS.house.dark.lambert = new THREE.MeshLambertMaterial({ color: 0x333333 });
+    MATERIALS.house.dark.phong = new THREE.MeshPhongMaterial({ color: 0x333333, shininess: 30 });
+    MATERIALS.house.dark.toon = new THREE.MeshToonMaterial({ color: 0x333333 });
+    MATERIALS.house.dark.basic = new THREE.MeshBasicMaterial({ color: 0x333333 });
+}
+    
+
+
 function init() {
+    createAllMaterials();
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
     if (debugFlag) {
@@ -106,8 +219,8 @@ function init() {
     ufo = createUFO(); // Assign created UFO to global variable
     ufo.position.set(0, UFO_ALTITUDE, 0); // Position UFO above the terrain
 
-    const house = createAlentejoHouse();
-    scene.add(house);
+    houseMesh = createAlentejoHouse();
+    scene.add(houseMesh);
     scene.add(ufo);
 
 
@@ -118,7 +231,7 @@ function createTerrain(heightmapTexture, floralTexture) {
     const terrainGeometry = new THREE.PlaneGeometry(
         TERRAIN_WIDTH,
         TERRAIN_HEIGHT,
-        TERRAIN_SEGMENTS_WIDTH -1, // segments are n-1 faces
+        TERRAIN_SEGMENTS_WIDTH -1,
         TERRAIN_SEGMENTS_HEIGHT -1
     );
 
@@ -188,17 +301,7 @@ function createTerrain(heightmapTexture, floralTexture) {
     vertices.needsUpdate = true;
     terrainGeometry.computeVertexNormals(); // Important for lighting
 
-    const terrainMaterial = new THREE.MeshStandardMaterial({
-        map: floralTexture,
-        side: THREE.FrontSide, 
-        // displacementMap: heightmapTexture,
-        // displacementScale: HEIGHTMAP_SCALE, // Scale the heightmap to match terrain size
-        // displacementBias: -HEIGHTMAP_SCALE / 8, // Center the heightmap roughly around 0
-        roughness: 0.9,
-        metalness: 0.2
-    });
-
-    let mesh = new THREE.Mesh(terrainGeometry, terrainMaterial);
+    let mesh = new THREE.Mesh(terrainGeometry, MATERIALS.terrain[currentShading]);
     mesh.rotation.x = -Math.PI / 2; // Rotate plane to be horizontal
     scene.add(mesh);
 
@@ -206,19 +309,10 @@ function createTerrain(heightmapTexture, floralTexture) {
 }
 
 function createSkydome() {
-    const skydomeRadius = TERRAIN_WIDTH * SKYDOME_SCALE; // Skydome smaller, will clip into terrain edges
+    const skydomeRadius = TERRAIN_WIDTH * SKYDOME_SCALE;
     const skydomeGeometry = new THREE.SphereGeometry(skydomeRadius, 60, 40);
-    // Invert geometry on the x-axis so that faces point inward
     skydomeGeometry.scale(1, 1, 1);
-
-    const starrySkyTexture = createStarrySkyTexture(SKY_TEXTURE_WIDTH, SKY_TEXTURE_HEIGHT, NUM_STARS, STAR_SIZE, STAR_VARIATION, TWILIGHT_OVERLAP);
-
-    const skydomeMaterial = new THREE.MeshBasicMaterial({
-        map: starrySkyTexture,
-        side: THREE.BackSide // Render the inside of the sphere
-    });
-
-    const skydomeMesh = new THREE.Mesh(skydomeGeometry, skydomeMaterial);
+    skydomeMesh = new THREE.Mesh(skydomeGeometry, MATERIALS.skydome[currentShading]);
     scene.add(skydomeMesh);
 
 }
@@ -226,37 +320,15 @@ function createSkydome() {
 function createMoon() {
     const moonRadius = TERRAIN_WIDTH * MOON_SCALE; // Moon size relative to terrain
     const moonGeometry = new THREE.SphereGeometry(moonRadius, 64, 32); // Higher segments for better texture mapping
-    if (IS_CHEESE) {
-        // Use a 2:1 aspect ratio for the cheese texture to reduce stretching
-        const cheeseTextureWidth = 2048;
-        const cheeseTextureHeight = 1024;
-        const cheeseTexture = createCheeseTexture(cheeseTextureWidth, cheeseTextureHeight, 20, 8, 16);
-        cheeseTexture.wrapS = THREE.RepeatWrapping;
-        cheeseTexture.wrapT = THREE.RepeatWrapping;
-        // Main cheese moon: fully lit, shows texture clearly
-        const cheeseMaterial = new THREE.MeshBasicMaterial({
-            map: cheeseTexture,
-        });
-        moonMesh = new THREE.Mesh(moonGeometry, cheeseMaterial);
-    } else {
-        // Normal moon: keep original look
-        const moonMaterial = new THREE.MeshStandardMaterial({
-            color: 0xfffff0,
-            emissive: 0xffffaa,
-            emissiveIntensity: 0.8,
-            roughness: 0.9,
-            metalness: 0.1,
-            map: null
-        });
-        moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
-    }
+    moonMesh = new THREE.Mesh(moonGeometry, MATERIALS.moon[currentShading]);
     // Position moon on the surface of the skydome sphere
     // Spherical coordinates: X = cos(altitude) * cos(angle), Y = sin(altitude), Z = cos(altitude) * sin(angle)
     const currentDirX = Math.cos(MOON_ALTITUDE) * Math.cos(MOON_ANGLE);
     const currentDirY = Math.sin(MOON_ALTITUDE);
     const currentDirZ = Math.cos(MOON_ALTITUDE) * Math.sin(MOON_ANGLE);
     const currentDirMagnitude = Math.sqrt(currentDirX*currentDirX + currentDirY*currentDirY + currentDirZ*currentDirZ);
-    console.log("Current direction vector: ", currentDirX, currentDirY, currentDirZ);
+
+    if (debugFlag) console.log("Current direction vector: ", currentDirX, currentDirY, currentDirZ);
     
     const scaleToSkydome = SKYDOME_SCALE / currentDirMagnitude;
 
@@ -271,7 +343,7 @@ function createMoon() {
     moonMesh.rotation.set(
         0, // Rotate around X axis to match altitude
         Math.PI - MOON_ANGLE, // Rotate around Y axis to match angle
-        MOON_ALTITUDE - Math.PI / 2  // No rotation around Z axis
+        -MOON_ALTITUDE  // No rotation around Z axis
     );
 
     if (debugFlag) {
@@ -290,7 +362,6 @@ function createMoon() {
     }
 
     scene.add(moonMesh);
-    console.log("Moon created and positioned on skydome surface.");
 }
 
 function createDirectionalLight() {
@@ -316,7 +387,6 @@ function createDirectionalLight() {
         const lightHelper = new THREE.DirectionalLightHelper(directionalLight, 5);
         scene.add(lightHelper);
     }
-    console.log("Directional light created.");
 }
 
 function createUFO() {
@@ -325,44 +395,35 @@ function createUFO() {
     const cockpitRadius = bodyRadius / 3; 
     const cockpitFlattening = 0.75; 
     const bodyFlattening = 0.25;
+    const lightRadius = bodyRadius * 0.6;
+    const smallSphereRadius = bodyRadius * 0.05;
+    const beamRadius = lightRadius * 0.8 - smallSphereRadius;
 
-    const lightRadius = bodyRadius * 0.6; // Radius at which lights are placed, slightly inside the body
-    const smallSphereRadius = bodyRadius * 0.05; // Size of the small spheres
-    const beamRadius = lightRadius * 0.8 - smallSphereRadius; // Radius of the beam cilinder, slightly smaller than the lights
+    // Subgroups for easier material switching
+    const bodyGroup = new THREE.Group();
+    const cockpitGroup = new THREE.Group();
+    const beamGroup = new THREE.Group();
+    const lightsGroup = new THREE.Group();
 
-    // Reverted transparency, kept emissive for lightMaterial
-    const lightMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff33, emissive: 0x00ff33, emissiveIntensity: 0.8 });
-    const ufoCockpitMaterial = new THREE.MeshStandardMaterial(
-        { 
-            color: 0x00ff33, 
-            //emissive: 0x00ff33, 
-            //emissiveIntensity: 0.2,
-            metalness: 0.3,
-            roughness: 0.0,
-        }
+    const ufoCockpitMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(cockpitRadius, 32, 16, 0, Math.PI * 2 , 0, Math.PI / 2),
+        MATERIALS.ufo.cockpit[currentShading]
     );
-    const ufoBodyMaterial = new THREE.MeshStandardMaterial(
-        { 
-            color: 0x444444, 
-            metalness: 0.9,
-            roughness: 0.3,
-            transparent: debugFlag,
-            opacity: debugFlag ? 0.5 : 1, // Set to 0.5 if debugFlag is true
-        }
-    );
-
-    const ufoCockpitGeometry = new THREE.SphereGeometry(cockpitRadius, 32, 16, 0, Math.PI * 2 , 0, Math.PI / 2);
-    const ufoCockpitMesh = new THREE.Mesh(ufoCockpitGeometry, ufoCockpitMaterial);
     ufoCockpitMesh.scale.set(1, cockpitFlattening, 1);
-    ufoCockpitMesh.position.y = (bodyRadius * bodyFlattening) * 0.5; // .5 is arbitrary to avoid small gap between cockpit and body
+    ufoCockpitMesh.position.y = (bodyRadius * bodyFlattening) * 0.5;
+    cockpitGroup.add(ufoCockpitMesh);
 
-    const ufoBodyGeometry = new THREE.SphereGeometry(bodyRadius, 32, 16);;
-    const ufoBodyMesh = new THREE.Mesh(ufoBodyGeometry, ufoBodyMaterial);
+    const ufoBodyMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(bodyRadius, 32, 16),
+        MATERIALS.ufo.body[currentShading]
+    );
     ufoBodyMesh.scale.set(1, bodyFlattening, 1); 
+    bodyGroup.add(ufoBodyMesh);
 
-    const beamHeight = bodyRadius * bodyFlattening + smallSphereRadius; // Height of cilinder part of UFO
+    const beamHeight = bodyRadius * bodyFlattening + smallSphereRadius;
     const ufoBeamGeometry = new THREE.CylinderGeometry(beamRadius, beamRadius, beamHeight, 32);
-    ufoBeamMesh = new THREE.Mesh(ufoBeamGeometry, ufoBodyMaterial);
+    ufoBeamMesh = new THREE.Mesh(ufoBeamGeometry, MATERIALS.ufo.beam[currentShading]);
+    beamGroup.add(ufoBeamMesh);
     
     const ufoBeamLight = new THREE.SpotLight(0x00ff33, 5,  UFO_ALTITUDE, Math.PI / 12, 1, 0.4); // color, intensity, distance, angle, penumbra, decay
     ufoBeamMesh.position.y = - (bodyRadius * bodyFlattening) / 2 - beamHeight / 2 + (bodyRadius * bodyFlattening * 0.5); // Position beam bottom at the body's bottom edge
@@ -381,14 +442,16 @@ function createUFO() {
         ufoBeamMesh.add(beamLightHelper); 
     }
 
-    ufoGroup.add(ufoCockpitMesh, ufoBodyMesh, ufoBeamMesh); 
+    // Add subgroups to main group
+    ufoGroup.add(cockpitGroup);
+    ufoGroup.add(bodyGroup);
+    ufoGroup.add(beamGroup);
 
     for (let i = 0; i < NUM_LIGHTS; i++) {
-        const angle = (i / NUM_LIGHTS) * Math.PI * 2; // Angle staggering for each sphere, not editable
+        const angle = (i / NUM_LIGHTS) * Math.PI * 2;
         const lightGeometry = new THREE.SphereGeometry(smallSphereRadius, 8, 8);
-        const lightMesh = new THREE.Mesh(lightGeometry, lightMaterial);
-        lightMesh.castShadow = false; // Makes it not interfere with point light
-
+        const lightMesh = new THREE.Mesh(lightGeometry, MATERIALS.ufo.lights[currentShading]);
+        lightMesh.castShadow = false;
         lightMesh.position.x = Math.cos(angle) * lightRadius;
         lightMesh.position.z = Math.sin(angle) * lightRadius;
         lightMesh.position.y = - Math.sqrt(bodyRadius * bodyRadius - lightRadius * lightRadius) * bodyFlattening; //Pin lights to surface of UFO body 
@@ -406,8 +469,15 @@ function createUFO() {
         }
         
         pointLight.position.set(0, -smallSphereRadius * 0.5, 0); 
-        ufoGroup.add(lightMesh); // Add the light sphere to the UFO group
+        lightsGroup.add(lightMesh);
+        ufoGroup.add(lightMesh); // For compatibility
     }
+
+    // Attach subgroups for material switching
+    ufoGroup.bodyGroup = bodyGroup;
+    ufoGroup.cockpitGroup = cockpitGroup;
+    ufoGroup.beamGroup = beamGroup;
+    ufoGroup.lightsGroup = lightsGroup;
 
     return ufoGroup;
 
@@ -415,25 +485,25 @@ function createUFO() {
 
 function createCorkTree() {
     const STEM_HEIGHT = CORK_TREE_HEIGHT;
-    const STEM_RADIUS = 1; // Radius of the cork tree stem
-    const STEM_ROTATION = Math.PI / 10; // Rotation of the cork tree stem
-    const BRANCH_ROTATION = STEM_ROTATION - Math.PI /3; // Rotation of the cork tree branch
+    const STEM_RADIUS = 1;
+    const STEM_ROTATION = Math.PI / 10;
+    const BRANCH_ROTATION = STEM_ROTATION - Math.PI /3;
     const BRANCH_SCALE = 0.5;
-    const BRANCH_HEIGHT = STEM_HEIGHT * BRANCH_SCALE; // Height of the cork tree branch
-    const BRANCH_RADIUS = STEM_RADIUS * BRANCH_SCALE; // Radius of the cork tree branch
-    const TOP_SIZE = STEM_HEIGHT * 0.2; // Height of the cork tree top
-    const STEM_ANTI_CLIP = 0.3; // How much stem is beneath the terrain, in proportion to its height
-
-    const stemGeometry = new THREE.CylinderGeometry(STEM_RADIUS, STEM_RADIUS, STEM_HEIGHT * (1 + STEM_ANTI_CLIP), 32);  
-    const stemMaterial = new THREE.MeshStandardMaterial({ color: 0xdb7322, roughness: 0.5, metalness: 0.1 });
-    const stemMesh = new THREE.Mesh(stemGeometry, stemMaterial);
-
+    const BRANCH_HEIGHT = STEM_HEIGHT * BRANCH_SCALE;
+    const BRANCH_RADIUS = STEM_RADIUS * BRANCH_SCALE;
+    const TOP_SIZE = STEM_HEIGHT * 0.2;
+    const STEM_ANTI_CLIP = 0.3;
+    // Use correct materials for stem/branch and top
+    const stemGeometry = new THREE.CylinderGeometry(STEM_RADIUS, STEM_RADIUS, STEM_HEIGHT * (1 + STEM_ANTI_CLIP), 32);
+    const stemMesh = new THREE.Mesh(stemGeometry, MATERIALS.corkTree.trunk[currentShading]);
     const branchGeometry = new THREE.CylinderGeometry(BRANCH_RADIUS, BRANCH_RADIUS, BRANCH_HEIGHT, 32);
-    const branchMaterial = new THREE.MeshStandardMaterial({ color: 0xdb7322, roughness: 0.5, metalness: 0.1 });
-    const branchMesh = new THREE.Mesh(branchGeometry, branchMaterial);
-
+    const branchMesh = new THREE.Mesh(branchGeometry, MATERIALS.corkTree.trunk[currentShading]);
+    
     const treeGroup = new THREE.Group();
-    // Shift stem so its base is at y = 0 (root at origin)
+    // Subgroups for easier material switching
+    const trunkGroup = new THREE.Group();
+    const topGroup = new THREE.Group();
+
     stemMesh.position.set(0, 0, 0);
 
     // Add branch to stem, and stem to tree group
@@ -442,42 +512,45 @@ function createCorkTree() {
     stemMesh.rotation.set(0, 0, STEM_ROTATION);
     stemMesh.position.set(0, -STEM_ANTI_CLIP * STEM_HEIGHT, 0); // Position stem above terrain
 
-    branchMesh.rotation.set(0, 0, BRANCH_ROTATION); 
+    branchMesh.rotation.set(0, 0, BRANCH_ROTATION);
     branchMesh.position.set(Math.sin(STEM_ROTATION) * STEM_HEIGHT, Math.cos(STEM_ROTATION) * STEM_HEIGHT / 2, 0);
-
-    const treeTop1 = createCorkTreeTop(TOP_SIZE); 
+    
+    const treeTop1 = createCorkTreeTop(TOP_SIZE);
     const treeTop2 = createCorkTreeTop(TOP_SIZE / 2);
-
     
     // Move the stem so its base is at y = 0 (root of the tree at base)
     stemMesh.position.set(0, STEM_HEIGHT / 2, 0);
     treeTop1.position.set(-Math.sin(STEM_ROTATION) * STEM_HEIGHT / 2, STEM_HEIGHT, 0); // Position top at the end of the stem
     treeTop2.position.set(
-        Math.sin(STEM_ROTATION) * STEM_HEIGHT / 2 - Math.sin(BRANCH_ROTATION) * BRANCH_HEIGHT, 
+        Math.sin(STEM_ROTATION) * STEM_HEIGHT / 2 - Math.sin(BRANCH_ROTATION) * BRANCH_HEIGHT,
         (Math.cos(BRANCH_ROTATION) * BRANCH_HEIGHT + Math.cos(STEM_ROTATION) * STEM_HEIGHT) / 2,
-        0); 
+        0);
 
-    const axesHelper1 = new THREE.AxesHelper(TOP_SIZE * 2);
-    treeGroup.add(axesHelper1); // Add axes helper to tree top 1
-    treeGroup.add(treeTop2); 
-    treeGroup.add(branchMesh, treeTop1); 
+    topGroup.add(treeTop1);
+    topGroup.add(treeTop2);
+
+    trunkGroup.add(stemMesh);
+    trunkGroup.add(branchMesh);
+
+    treeGroup.add(trunkGroup);
+    treeGroup.add(topGroup);
+
+    // Attach subgroups for material switching
+    treeGroup.trunkGroup = trunkGroup;
+    treeGroup.topGroup = topGroup;
 
     return treeGroup;
-
 }
 
 function createCorkTreeTop(radius){
     const ellipsoidGeometry = new THREE.SphereGeometry(radius);
     ellipsoidGeometry.scale(2, 1, 1);
-    const treeTopMaterial = new THREE.MeshStandardMaterial({ color: 0x218732, roughness: 0.5, metalness: 0.1 });
-    const ellipsoidMesh = new THREE.Mesh(ellipsoidGeometry, treeTopMaterial);
-
+    const ellipsoidMesh = new THREE.Mesh(ellipsoidGeometry, MATERIALS.corkTree.top[currentShading]);
     return ellipsoidMesh;
 }
 
 function placeCorkTrees() {
     const trees = [];
-
     for (let i = 0; i < NUM_TREES; i++) {
         const tree = createCorkTree();
 
@@ -508,7 +581,7 @@ function placeCorkTrees() {
 
         let posY = getTerrainHeight(posX, posZ) - 1;
 
-        console.log("Placing tree at position: ", posX, posY, posZ, " with scale Y: ", scaleY, " and rotation Y: ", rotationY);
+        if (debugFlag) console.log("Placing tree at position: ", posX, posY, posZ, " with scale Y: ", scaleY, " and rotation Y: ", rotationY);
 
         tree.position.set(posX, posY, posZ);
         tree.scale.set(1, scaleY, 1);
@@ -518,43 +591,44 @@ function placeCorkTrees() {
         trees.push(tree);
         scene.add(tree);
     }
-
+    corkTreeMeshes = trees;
     return trees;
 }
 
 function createAlentejoHouse() {
-    let position = new THREE.Vector3(200, 80, -500)
-    // MATERIAIS
-    const white = new THREE.MeshLambertMaterial({ color: 0xffffff });
-    const blue = new THREE.MeshLambertMaterial({ color: 0x005bbb });
-    const roofOrange = new THREE.MeshLambertMaterial({ color: 0xffa500 });
-    const dark = new THREE.MeshLambertMaterial({ color: 0x333333 });
-
-    // DIMENSÕES
+    let position = new THREE.Vector3(200, 80, -500);
+    const white = MATERIALS.house.white[currentShading];
+    const blue = MATERIALS.house.blue[currentShading];
+    const roofOrange = MATERIALS.house.orange[currentShading];
+    const dark = MATERIALS.house.dark[currentShading];
     const width = 120;
     const height = 40;
     const depth = 60;
-
-    // CASA PRINCIPAL
     const house = new THREE.Group();
-    house.position.copy(position); // posição base global da casa
+    house.position.copy(position);
+
+    // Subgroups for easier material switching
+    const whiteGroup = new THREE.Group();
+    const blueGroup = new THREE.Group();
+    const orangeGroup = new THREE.Group();
+    const darkGroup = new THREE.Group();
 
     // Corpo principal
     const base = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), white);
     base.position.set(0, height / 2, 0);
-    house.add(base);
+    whiteGroup.add(base);
 
     // Faixa azul na base
     const baseTrim = new THREE.Mesh(new THREE.BoxGeometry(width + 0.1, 10, depth + 0.1), blue);
     baseTrim.position.set(0, 5, 0);
-    house.add(baseTrim);
+    blueGroup.add(baseTrim);
 
     // Telhado duas águas (usamos cilindro rotacionado)
     const roofGeo = new THREE.CylinderGeometry(depth / 2, depth / 2, width, 2, 1, false, 0, Math.PI);
     const roofMesh = new THREE.Mesh(roofGeo, roofOrange);
     roofMesh.rotation.z = Math.PI / 2;
     roofMesh.position.set(0, height, 0); // acima da casa
-    house.add(roofMesh);
+    orangeGroup.add(roofMesh);
 
     // Janelas frontais
     const windowY = 25;
@@ -565,7 +639,8 @@ function createAlentejoHouse() {
         frame.position.set(i, windowY, windowZ);
         const window = new THREE.Mesh(new THREE.BoxGeometry(8, 8, 1), dark);
         window.position.set(i, windowY, windowZ - 0.5);
-        house.add(frame, window);
+        blueGroup.add(frame);
+        darkGroup.add(window);
     }
 
     // Porta central
@@ -575,34 +650,47 @@ function createAlentejoHouse() {
     doorFrame.position.set(10, doorY + 4, -doorZ); // virada para frente
     const door = new THREE.Mesh(new THREE.BoxGeometry(10, 20, 1), dark);
     door.position.set(10, doorY + 4, -doorZ - 0.5);
-    house.add(doorFrame, door);
+    blueGroup.add(doorFrame);
+    darkGroup.add(door);
 
     // Porta lateral com cobertura
     const sideDoor = new THREE.Mesh(new THREE.BoxGeometry(10, 20, 1), dark);
     sideDoor.position.set(width / 2 - 10, 10, 10);
-    house.add(sideDoor);
+    darkGroup.add(sideDoor);
 
     const cover = new THREE.Mesh(new THREE.BoxGeometry(12, 1, 8), roofOrange);
     cover.rotation.x = -Math.PI / 6;
     cover.position.set(width / 2 - 10, 20, 10);
-    house.add(cover);
+    orangeGroup.add(cover);
 
     // Chaminés
     const chimney1 = new THREE.Mesh(new THREE.BoxGeometry(30, 30, 10), white);
     chimney1.position.set(-20, height + 15, -23);
-    house.add(chimney1);
+    whiteGroup.add(chimney1);
 
     const chimneyTop1 = new THREE.Mesh(new THREE.BoxGeometry(32, 4, 12), blue);
     chimneyTop1.position.set(-20, height + 30, -23);
-    house.add(chimneyTop1);
+    blueGroup.add(chimneyTop1);
 
     const chimney2 = new THREE.Mesh(new THREE.BoxGeometry(30, 30, 10), white);
     chimney2.position.set(-20, height + 15, 23);
-    house.add(chimney2);
+    whiteGroup.add(chimney2);
 
     const chimneyTop2 = new THREE.Mesh(new THREE.BoxGeometry(32, 4, 12), blue);
     chimneyTop2.position.set(-20, height + 30, 23);
-    house.add(chimneyTop2);
+    blueGroup.add(chimneyTop2);
+
+    // Add subgroups to house
+    house.add(whiteGroup);
+    house.add(blueGroup);
+    house.add(orangeGroup);
+    house.add(darkGroup);
+
+    // Attach subgroups for material switching
+    house.whiteGroup = whiteGroup;
+    house.blueGroup = blueGroup;
+    house.orangeGroup = orangeGroup;
+    house.darkGroup = darkGroup;
 
     return house;
 
@@ -640,6 +728,94 @@ function switchPointLightsMode() {
     }
 }
 
+function applyShadingToScene() {
+    // Terrain
+    if (terrainMesh) {
+        let mat = MATERIALS.terrain[currentShading];
+        if (mat && terrainMesh.material !== mat) terrainMesh.material = mat;
+    }
+    // Moon
+    if (moonMesh) {
+        let mat = IS_CHEESE ? MATERIALS.cheese[currentShading] : MATERIALS.moon[currentShading];
+        if (mat && moonMesh.material !== mat) moonMesh.material = mat;
+    }
+    // Skydome (always use basic material for correct appearance)
+    if (skydomeMesh) {
+        let mat = MATERIALS.skydome[currentShading];
+        if (mat && skydomeMesh.material !== mat) skydomeMesh.material = mat;
+    }
+    // Cork Trees (if subgroups exist, use them; else fallback to geometry type)
+    for (const tree of corkTreeMeshes) {
+        tree.trunkGroup.traverse(obj => {
+            if (obj.isMesh) obj.material = MATERIALS.corkTree.trunk[currentShading];
+        });
+        tree.topGroup.traverse(obj => {
+            if (obj.isMesh) obj.material = MATERIALS.corkTree.top[currentShading];
+        });
+    }
+    // UFO (if subgroups exist, use them; else fallback to geometry type)
+    if (ufo) {
+        if (ufo.bodyGroup && ufo.cockpitGroup && ufo.beamGroup && ufo.lightsGroup) {
+            ufo.bodyGroup.traverse(obj => {
+                if (obj.isMesh) obj.material = MATERIALS.ufo.body[currentShading];
+            });
+            ufo.cockpitGroup.traverse(obj => {
+                if (obj.isMesh) obj.material = MATERIALS.ufo.cockpit[currentShading];
+            });
+            ufo.beamGroup.traverse(obj => {
+                if (obj.isMesh) obj.material = MATERIALS.ufo.beam[currentShading];
+            });
+            ufo.lightsGroup.traverse(obj => {
+                if (obj.isMesh) obj.material = MATERIALS.ufo.lights[currentShading];
+            });
+        }
+    }
+    // TODO HOUSE GEOMETRY IS STILL WRONG
+    if (houseMesh) {
+        if (houseMesh.whiteGroup && houseMesh.blueGroup && houseMesh.orangeGroup && houseMesh.darkGroup) {
+            houseMesh.whiteGroup.traverse(obj => {
+                if (obj.isMesh) obj.material = lightingEnabled ? MATERIALS.house.white[currentShading] : MATERIALS.house.white.basic;
+            });
+            houseMesh.blueGroup.traverse(obj => {
+                if (obj.isMesh) obj.material = lightingEnabled ? MATERIALS.house.blue[currentShading] : MATERIALS.house.blue.basic;
+            });
+            houseMesh.orangeGroup.traverse(obj => {
+                if (obj.isMesh) obj.material = lightingEnabled ? MATERIALS.house.orange[currentShading] : MATERIALS.house.orange.basic;
+            });
+            houseMesh.darkGroup.traverse(obj => {
+                if (obj.isMesh) obj.material = lightingEnabled ? MATERIALS.house.dark[currentShading] : MATERIALS.house.dark.basic;
+            });
+        } else {
+            houseMesh.traverse(obj => {
+                if (obj.isMesh) {
+                    // fallback: try to guess by geometry (not ideal)
+                    let mat = lightingEnabled ? MATERIALS.house.white[currentShading] : MATERIALS.house.white.basic;
+                    if (mat && obj.material !== mat) obj.material = mat;
+                }
+            });
+        }
+    }
+}
+
+function setShadingMode(mode) {
+    currentShading = mode;
+    applyShadingToScene();
+}
+
+function toggleLighting() {
+    lightingEnabled = !lightingEnabled;
+    // Toggle all lights in the scene
+    if (directionalLight) directionalLight.visible = lightingEnabled;
+    if (ufoBeamMesh) {
+        const spotLight = ufoBeamMesh.children.find(child => child instanceof THREE.SpotLight);
+        if (spotLight) spotLight.visible = lightingEnabled;
+    }
+    for (let i = 0; i < ufoLights.length; i++) {
+        ufoLights[i].visible = lightingEnabled;
+    }
+    // No material swap, just lighting
+}
+
 function onKeyDown(e) {
     switch (e.keyCode) {
         case 68: //D
@@ -649,18 +825,22 @@ function onKeyDown(e) {
 
         case 81: //Q
         case 113: //q
+            setShadingMode('lambert');
             break;
 
         case 87: //W
         case 119: //w
+            setShadingMode('phong');
             break;
 
         case 69: //E
         case 101: //e
+            setShadingMode('toon');
             break;
 
         case 82: //R
         case 114: //r
+            toggleLighting();
             break;
             
         case 80: //P
