@@ -94,21 +94,21 @@ function createAllMaterials() {
 
     // Skydome
     const starrySkyTexture = createStarrySkyTexture(SKY_TEXTURE_WIDTH, SKY_TEXTURE_HEIGHT, NUM_STARS, STAR_SIZE, STAR_VARIATION, TWILIGHT_OVERLAP);
-    MATERIALS.skydome.lambert = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide, emissive: 0x222244, emissiveIntensity: 0.18 });
-    MATERIALS.skydome.phong = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide, shininess: 10, emissive: 0x222244, emissiveIntensity: 0.18 });
+    MATERIALS.skydome.lambert = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide});
+    MATERIALS.skydome.phong = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide });
     MATERIALS.skydome.toon = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide });
     MATERIALS.skydome.basic = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide });
 
     // Moon
     MATERIALS.moon.lambert = new THREE.MeshBasicMaterial({ color: 0xffffaa });
-    MATERIALS.moon.phong = new THREE.MeshBasicMaterial({ color: 0xffffaa, shininess: 60 });
-    MATERIALS.moon.toon = new THREE.MeshBasicMaterial({ color: 0xffffaa, emissive: 0xffffaa, emissiveIntensity: 0.6 });
+    MATERIALS.moon.phong = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+    MATERIALS.moon.toon = new THREE.MeshBasicMaterial({ color: 0xffffaa });
     MATERIALS.moon.basic = new THREE.MeshBasicMaterial({ color: 0xfffff0 });
 
     const cheeseTexture = createCheeseTexture(2048, 1024, 15, 10, 20);
     MATERIALS.cheese.lambert = new THREE.MeshBasicMaterial({ map: cheeseTexture });
-    MATERIALS.cheese.phong = new THREE.MeshBasicMaterial({ map: cheeseTexture, shininess: 10 });
-    MATERIALS.cheese.toon = new THREE.MeshBasicMaterial({ map: cheeseTexture, emissive: 0xffffff, emissiveIntensity: 0.2 });
+    MATERIALS.cheese.phong = new THREE.MeshBasicMaterial({ map: cheeseTexture });
+    MATERIALS.cheese.toon = new THREE.MeshBasicMaterial({ map: cheeseTexture });
     MATERIALS.cheese.basic = new THREE.MeshBasicMaterial({ map: cheeseTexture });
     // If cheese moon is enabled, replace the default moon material
 
