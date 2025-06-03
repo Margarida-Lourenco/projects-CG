@@ -1,8 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { VRButton } from "three/addons/webxr/VRButton.js";
-import * as Stats from "three/addons/libs/stats.module.js";
-import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { createFloralFieldTexture, createStarrySkyTexture, createCheeseTexture } from './procedural-textures.js';
 
 let scene, camera, renderer, controls;
@@ -76,7 +74,6 @@ const MATERIALS = {
         white: { lambert: null, phong: null, toon: null, basic: null },
         blue: { lambert: null, phong: null, toon: null, basic: null },
         orange: { lambert: null, phong: null, toon: null, basic: null },
-        dark: { lambert: null, phong: null, toon: null, basic: null }
     },
     cheese: { lambert: null, phong: null, toon: null, basic: null }
 };
@@ -147,7 +144,7 @@ function createAllMaterials() {
     MATERIALS.ufo.lights.toon = new THREE.MeshToonMaterial({ color: 0x00ff33 });
     MATERIALS.ufo.lights.basic = new THREE.MeshBasicMaterial({ color: 0x00ff33 });
 
-    // House (white walls, blue trim, orange roof, dark windows/doors)
+    // House (white walls, blue trim, orange roof)
     MATERIALS.house.white.lambert = new THREE.MeshLambertMaterial({ color: 0xffffff });
     MATERIALS.house.white.phong = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 30 });
     MATERIALS.house.white.toon = new THREE.MeshToonMaterial({ color: 0xffffff });
@@ -160,10 +157,6 @@ function createAllMaterials() {
     MATERIALS.house.orange.phong = new THREE.MeshPhongMaterial({ color: 0xffa500, shininess: 30 });
     MATERIALS.house.orange.toon = new THREE.MeshToonMaterial({ color: 0xffa500 });
     MATERIALS.house.orange.basic = new THREE.MeshBasicMaterial({ color: 0xffa500 });
-    MATERIALS.house.dark.lambert = new THREE.MeshLambertMaterial({ color: 0x333333 });
-    MATERIALS.house.dark.phong = new THREE.MeshPhongMaterial({ color: 0x333333, shininess: 30 });
-    MATERIALS.house.dark.toon = new THREE.MeshToonMaterial({ color: 0x333333 });
-    MATERIALS.house.dark.basic = new THREE.MeshBasicMaterial({ color: 0x333333 });
 }
 
 function createCameras() {
@@ -441,7 +434,7 @@ function createUFO() {
     ufoBeamMesh = new THREE.Mesh(ufoBeamGeometry, MATERIALS.ufo.beam[currentShading]);
     beamGroup.add(ufoBeamMesh);
 
-    const ufoBeamLight = new THREE.SpotLight(0x00ff33, 5, UFO_ALTITUDE, Math.PI / 12, 1, 0.4); // color, intensity, distance, angle, penumbra, decay
+    const ufoBeamLight = new THREE.SpotLight(0x00ff33, 100, UFO_ALTITUDE, Math.PI / 12, 1, 0.4); // color, intensity, distance, angle, penumbra, decay
     ufoBeamMesh.position.y = - (bodyRadius * bodyFlattening) / 2 - beamHeight / 2 + (bodyRadius * bodyFlattening * 0.5); // Position beam bottom at the body's bottom edge
     ufoBeamLight.position.set(0, 0, 0);
     ufoBeamLight.castShadow = true; // Enable shadow casting
@@ -625,9 +618,6 @@ function getTerrainHeight(x, z) {
 
 function createAlentejoHouse() {
     let position = new THREE.Vector3(200, 40, -500);
-    const white = MATERIALS.house.white[currentShading];
-    const blue = MATERIALS.house.blue[currentShading];
-    const roofOrange = MATERIALS.house.orange[currentShading];
     const house = new THREE.Group();
     house.position.copy(position);
 
@@ -652,10 +642,9 @@ function createAlentejoHouse() {
     house.add(blueGroup);
     house.add(orangeGroup);
 
-    house.whiteGroup = white;
-    house.blueGroup = blue;
-    house.orangeGroup = roofOrange;
-
+    house.whiteGroup = whiteGroup;
+    house.blueGroup = blueGroup;
+    house.orangeGroup = orangeGroup;
 
     return house;
 }
@@ -687,8 +676,8 @@ function createBase() {
     geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
     geometry.computeVertexNormals();
 
-    const material = new THREE.MeshLambertMaterial({ color: 0xffffff });
-    const mesh = new THREE.Mesh(geometry, material);
+    const white = MATERIALS.house.white[currentShading];
+    const mesh = new THREE.Mesh(geometry, white);
     mesh.position.y = 5;
 
     return mesh;
@@ -722,15 +711,15 @@ function createBaseTrim() {
     geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
     geometry.computeVertexNormals();
 
-    const material = new THREE.MeshLambertMaterial({ color: 0x005bbb });
-    const mesh = new THREE.Mesh(geometry, material);
+    const blue = MATERIALS.house.blue[currentShading];
+    const mesh = new THREE.Mesh(geometry, blue);
 
     return mesh;
 }
 
 
 function createRoof() {
-    const roofOrange = new THREE.MeshLambertMaterial({ color: 0xffa500 });
+    const roofOrange = MATERIALS.house.orange[currentShading];
     const geometry = new THREE.CylinderGeometry(30, 30, 120, 2, 1, false, 0, Math.PI);
     const mesh = new THREE.Mesh(geometry, roofOrange);
     mesh.rotation.z = Math.PI / 2;
@@ -752,8 +741,8 @@ function createWindowFrame() {
     geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
     geometry.computeVertexNormals();
 
-    const material = new THREE.MeshLambertMaterial({ color: 0x005bbb });
-    return new THREE.Mesh(geometry, material);
+    const blue = MATERIALS.house.blue[currentShading];
+    return new THREE.Mesh(geometry, blue);
 }
 
 function createFrontWindows() {
@@ -793,8 +782,8 @@ function createFrontDoor() {
     geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
     geometry.computeVertexNormals();
 
-    const material = new THREE.MeshLambertMaterial({ color: 0x005bbb });
-    const mesh = new THREE.Mesh(geometry, material);
+    const blue = MATERIALS.house.blue[currentShading];
+    const mesh = new THREE.Mesh(geometry, blue);
     mesh.position.set(10, 12, -31);
     return mesh;
 }
@@ -824,8 +813,8 @@ function createSideDoor() {
     geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
     geometry.computeVertexNormals();
 
-    const material = new THREE.MeshLambertMaterial({ color: 0xffffff });
-    const mesh = new THREE.Mesh(geometry, material);
+    const blue = MATERIALS.house.blue[currentShading];
+    const mesh = new THREE.Mesh(geometry, blue);
     mesh.rotation.y = Math.PI / 2;
     mesh.position.set(-60, 12, -20);
     return mesh;
@@ -873,8 +862,8 @@ function createBox(width, height, depth, material) {
 function createChimneys() {
     const group = new THREE.Group();
 
-    const white = new THREE.MeshLambertMaterial({ color: 0xffffff });
-    const blue = new THREE.MeshLambertMaterial({ color: 0x005bbb });
+    const white = MATERIALS.house.white[currentShading];
+    const blue = MATERIALS.house.blue[currentShading];
 
     const chimney1 = createBox(30, 30, 10, white);
     chimney1.position.set(-30, 55, -23);
@@ -899,8 +888,8 @@ function createChimneys() {
 function createSofa() {
     const group = new THREE.Group();
 
-    const blue = new THREE.MeshLambertMaterial({ color: 0x005bbb });
-    const white = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const blue = MATERIALS.house.blue[currentShading];
+    const white = MATERIALS.house.white[currentShading];
 
     const base = createBox(15, 5, 10, blue);
     base.position.set(0, -2.5, 0);
@@ -989,9 +978,8 @@ function applyShadingToScene() {
             });
         }
     }
-    // TODO HOUSE GEOMETRY IS STILL WRONG
     if (houseMesh) {
-        if (houseMesh.whiteGroup && houseMesh.blueGroup && houseMesh.orangeGroup && houseMesh.darkGroup) {
+        if (houseMesh.whiteGroup && houseMesh.blueGroup && houseMesh.orangeGroup) {
             houseMesh.whiteGroup.traverse(obj => {
                 if (obj.isMesh) obj.material = lightingEnabled ? MATERIALS.house.white[currentShading] : MATERIALS.house.white.basic;
             });
@@ -1000,9 +988,6 @@ function applyShadingToScene() {
             });
             houseMesh.orangeGroup.traverse(obj => {
                 if (obj.isMesh) obj.material = lightingEnabled ? MATERIALS.house.orange[currentShading] : MATERIALS.house.orange.basic;
-            });
-            houseMesh.darkGroup.traverse(obj => {
-                if (obj.isMesh) obj.material = lightingEnabled ? MATERIALS.house.dark[currentShading] : MATERIALS.house.dark.basic;
             });
         } else {
             houseMesh.traverse(obj => {
