@@ -136,10 +136,10 @@ function createAllMaterials() {
     MATERIALS.ufo.cockpit.toon = new THREE.MeshToonMaterial({ color: 0x00ff33 });
     MATERIALS.ufo.cockpit.basic = new THREE.MeshBasicMaterial({ color: 0x00ff33 });
     // UFO beam
-    MATERIALS.ufo.beam.lambert = new THREE.MeshLambertMaterial({ color: 0x00ff33 });
-    MATERIALS.ufo.beam.phong = new THREE.MeshPhongMaterial({ color: 0x00ff33, shininess: 100 });
-    MATERIALS.ufo.beam.toon = new THREE.MeshToonMaterial({ color: 0x00ff33 });
-    MATERIALS.ufo.beam.basic = new THREE.MeshBasicMaterial({ color: 0x00ff33 });
+    MATERIALS.ufo.beam.lambert = new THREE.MeshLambertMaterial({ color: 0x444444 });
+    MATERIALS.ufo.beam.phong = new THREE.MeshPhongMaterial({ color: 0x444444, shininess: 100 });
+    MATERIALS.ufo.beam.toon = new THREE.MeshToonMaterial({ color: 0x444444 });
+    MATERIALS.ufo.beam.basic = new THREE.MeshBasicMaterial({ color: 0x444444 });
     // UFO lights
     MATERIALS.ufo.lights.lambert = new THREE.MeshLambertMaterial({ color: 0x00ff33, emissive: 0x00ff33, emissiveIntensity: 0.8 });
     MATERIALS.ufo.lights.phong = new THREE.MeshPhongMaterial({ color: 0x00ff33, emissive: 0x00ff33, shininess: 100 });
@@ -471,8 +471,8 @@ function createUFO() {
 
         pointLight.position.set(0, -smallSphereRadius * 0.5, 0);
         lightsGroup.add(lightMesh);
-        ufoGroup.add(lightMesh); // For compatibility
     }
+    ufoGroup.add(lightsGroup); // Add lightsGroup to ufoGroup
 
     // Attach subgroups for material switching
     ufoGroup.bodyGroup = bodyGroup;
@@ -731,7 +731,7 @@ function switchPointLightsMode() {
 function applyShadingToScene() {
     // Terrain
     if (terrainMesh) {
-        let mat = MATERIALS.terrain[currentShading];
+        let mat = lightingEnabled ? MATERIALS.terrain[currentShading] : MATERIALS.terrain.basic;
         if (mat && terrainMesh.material !== mat) terrainMesh.material = mat;
     }
     // Moon
@@ -741,34 +741,34 @@ function applyShadingToScene() {
             : (lightingEnabled ? MATERIALS.moon[currentShading] : MATERIALS.moon.basic);
         if (mat && moonMesh.material !== mat) moonMesh.material = mat;
     }
-    // Skydome (always use basic material for correct appearance)
+    // Skydome
     if (skydomeMesh) {
-        let mat = MATERIALS.skydome[currentShading];
+        let mat = lightingEnabled ? MATERIALS.skydome[currentShading] : MATERIALS.skydome.basic;
         if (mat && skydomeMesh.material !== mat) skydomeMesh.material = mat;
     }
-    // Cork Trees (if subgroups exist, use them; else fallback to geometry type)
+    // Cork Trees
     for (const tree of corkTreeMeshes) {
         tree.trunkGroup.traverse(obj => {
-            if (obj.isMesh) obj.material = MATERIALS.corkTree.trunk[currentShading];
+            if (obj.isMesh) obj.material = lightingEnabled ? MATERIALS.corkTree.trunk[currentShading] : MATERIALS.corkTree.trunk.basic;
         });
         tree.topGroup.traverse(obj => {
-            if (obj.isMesh) obj.material = MATERIALS.corkTree.top[currentShading];
+            if (obj.isMesh) obj.material = lightingEnabled ? MATERIALS.corkTree.top[currentShading] : MATERIALS.corkTree.top.basic;
         });
     }
-    // UFO (if subgroups exist, use them; else fallback to geometry type)
+    // UFO
     if (ufo) {
         if (ufo.bodyGroup && ufo.cockpitGroup && ufo.beamGroup && ufo.lightsGroup) {
             ufo.bodyGroup.traverse(obj => {
-                if (obj.isMesh) obj.material = MATERIALS.ufo.body[currentShading];
+                if (obj.isMesh) obj.material = lightingEnabled ? MATERIALS.ufo.body[currentShading] : MATERIALS.ufo.body.basic;
             });
             ufo.cockpitGroup.traverse(obj => {
-                if (obj.isMesh) obj.material = MATERIALS.ufo.cockpit[currentShading];
+                if (obj.isMesh) obj.material = lightingEnabled ? MATERIALS.ufo.cockpit[currentShading] : MATERIALS.ufo.cockpit.basic;
             });
             ufo.beamGroup.traverse(obj => {
-                if (obj.isMesh) obj.material = MATERIALS.ufo.beam[currentShading];
+                if (obj.isMesh) obj.material = lightingEnabled ? MATERIALS.ufo.beam[currentShading] : MATERIALS.ufo.beam.basic;
             });
             ufo.lightsGroup.traverse(obj => {
-                if (obj.isMesh) obj.material = MATERIALS.ufo.lights[currentShading];
+                if (obj.isMesh) obj.material = lightingEnabled ? MATERIALS.ufo.lights[currentShading] : MATERIALS.ufo.lights.basic;
             });
         }
     }
@@ -790,7 +790,6 @@ function applyShadingToScene() {
         } else {
             houseMesh.traverse(obj => {
                 if (obj.isMesh) {
-                    // fallback: try to guess by geometry (not ideal)
                     let mat = lightingEnabled ? MATERIALS.house.white[currentShading] : MATERIALS.house.white.basic;
                     if (mat && obj.material !== mat) obj.material = mat;
                 }
@@ -815,7 +814,7 @@ function toggleLighting() {
     for (let i = 0; i < ufoLights.length; i++) {
         ufoLights[i].visible = lightingEnabled;
     }
-    // No material swap, just lighting
+    applyShadingToScene();
 }
 
 function onKeyDown(e) {
