@@ -13,7 +13,8 @@ let ufoBeamMesh, ufoLights = [];
 let keyStates = {}; // To store the state of pressed keys
 
 const debugFlag = false; // Set to true to enable scene helpers
-const IS_CHEESE = true // Is the moon made of cheese?
+let isCheese = false // Is the moon made of cheese?
+let cheese_easter_egg_counter = isCheese ? 20 : 0; // Counter for cheese easter egg
 
 const TERRAIN_WIDTH = 3560;
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
@@ -735,7 +736,9 @@ function applyShadingToScene() {
     }
     // Moon
     if (moonMesh) {
-        let mat = IS_CHEESE ? MATERIALS.cheese[currentShading] : MATERIALS.moon[currentShading];
+        let mat = isCheese
+            ? (lightingEnabled ? MATERIALS.cheese[currentShading] : MATERIALS.cheese.basic)
+            : (lightingEnabled ? MATERIALS.moon[currentShading] : MATERIALS.moon.basic);
         if (mat && moonMesh.material !== mat) moonMesh.material = mat;
     }
     // Skydome (always use basic material for correct appearance)
@@ -864,6 +867,17 @@ function onKeyDown(e) {
             break;
         case 40: // Down arrow
             keyStates['arrowdown'] = true;
+            break;
+
+        case 67: // C
+        case 99: // c
+            if (cheese_easter_egg_counter >= 20){
+                isCheese = !isCheese; // Toggle cheese mode
+                console.log("Cheese mode toggled! The moon " + (isCheese ? "is" : "is not") + " made of cheese!");
+            }
+            else
+                cheese_easter_egg_counter++;
+            applyShadingToScene(); // Update materials based on cheese mode
             break;
     }
 
