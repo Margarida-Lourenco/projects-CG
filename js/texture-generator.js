@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { createFloralFieldTexture, createStarrySkyTexture, createCheeseTexture } from './procedural-textures.js';
 
 let scene, camera, renderer;
-let textureCanvas;
+let textureCanvas, textureContext;
 let planeMesh, planeMaterial;
 
 const TEXTURE_WIDTH = 512;
