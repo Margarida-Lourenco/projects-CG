@@ -163,9 +163,11 @@ function createAllMaterials() {
 }
 
 function createCameras() {
-    fixedCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4);
-    fixedCamera.position.set(0, TERRAIN_WIDTH * 0.5, TERRAIN_WIDTH * 0.5); // Adjusted camera for new scale
-    fixedCamera.lookAt(0, 0, 0); 
+    // Fixed camera: looks at the house from a fixed position
+    fixedCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4);
+    // Place the camera a bit back and above, looking at the house
+    fixedCamera.position.set(HOUSE_POSITION.x + 100, HOUSE_POSITION.y + 80, HOUSE_POSITION.z - 400);
+    fixedCamera.lookAt(HOUSE_POSITION.x, HOUSE_POSITION.y + UFO_ALTITUDE /3, HOUSE_POSITION.z);
 
     stereoCamera = new THREE.StereoCamera(); // Stereo camera for VR
 
@@ -1026,13 +1028,20 @@ function toggleLighting() {
 }
 
 function onResize() {
-  renderer.setSize(window.innerWidth, window.innerHeight);
-
-  if (window.innerHeight > 0 && window.innerWidth > 0) {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-  }
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    if (window.innerHeight > 0 && window.innerWidth > 0) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        fixedCamera.aspect = window.innerWidth / window.innerHeight;
+        fixedCamera.updateProjectionMatrix();
+        if (stereoCamera) {
+            stereoCamera.aspect = window.innerWidth / window.innerHeight;
+            stereoCamera.update(fixedCamera);
+        }
+    }
 }
+
+let vrMode = false;
 
 function onKeyDown(e) {
     switch (e.keyCode) {
