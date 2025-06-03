@@ -1030,6 +1030,37 @@ function applyShadingToScene() {
     }
 }
 
+function regenerateFlowers() {
+    const newFloralTexture = createFloralFieldTexture(TERRAIN_TEXTURE_WIDTH, TERRAIN_TEXTURE_HEIGHT, NUM_FLOWERS, FLOWER_SIZE, FLOWER_VARIATION);
+    newFloralTexture.wrapS = THREE.RepeatWrapping;
+    newFloralTexture.wrapT = THREE.RepeatWrapping;
+    newFloralTexture.repeat.set(TERRAIN_WIDTH / TEXTURE_WORLD_SIZE, TERRAIN_HEIGHT / TEXTURE_WORLD_SIZE);
+
+    for (const key in MATERIALS.terrain) {
+        MATERIALS.terrain[key].map = newFloralTexture;
+        MATERIALS.terrain[key].map.needsUpdate = true;
+    }
+
+    if (terrainMesh) {
+        terrainMesh.material.map = newFloralTexture;
+        terrainMesh.material.needsUpdate = true;
+    }
+}
+
+function regenerateStars() {
+    const newStarryTexture = createStarrySkyTexture(SKY_TEXTURE_WIDTH, SKY_TEXTURE_HEIGHT, NUM_STARS, STAR_SIZE, STAR_VARIATION, TWILIGHT_OVERLAP);
+
+    for (const key in MATERIALS.skydome) {
+        MATERIALS.skydome[key].map = newStarryTexture;
+        MATERIALS.skydome[key].map.needsUpdate = true;
+    }
+
+    if (skydome) {
+        skydome.material.map = newStarryTexture;
+        skydome.material.needsUpdate = true;
+    }
+}
+
 function setShadingMode(mode) {
     currentShading = mode;
     applyShadingToScene();
@@ -1129,6 +1160,14 @@ function onKeyDown(e) {
             else
                 cheese_easter_egg_counter++;
             applyShadingToScene(); // Update materials based on cheese mode
+            break;
+        // case 1
+        case 49: // 1
+            regenerateFlowers();
+            break;
+
+        case 50: // 2
+            regenerateStars();
             break;
     }
 
