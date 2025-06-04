@@ -15,9 +15,13 @@ let keyStates = {}; // To store the state of pressed keys
 let userRig;
 
 const debugFlag = false; // Set to true to enable scene helpers
-let isCheese = true // Is the moon made of cheese?
-let cheese_easter_egg_counter = isCheese ? 20 : 0; // Counter for cheese easter egg
 
+// OPTIONALS
+let isCheese = false // Is the moon made of cheese?
+let cheese_easter_egg_counter = isCheese ? 20 : 0; // Counter for cheese easter egg
+const AMBIENT_LIGHT_INTENSITY = 0.05; // Ambient light intensity, 0-1D
+
+// Terrain settings
 const TERRAIN_WIDTH = 3560;
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
 const TERRAIN_SEGMENTS_WIDTH = 200; // Number of segments in the width. Smaller values are smoother but less detailed
@@ -212,6 +216,12 @@ function createCameras() {
             helper
         ); // Make user rig visible in the scene
     }
+
+    if (AMBIENT_LIGHT_INTENSITY > 0) {
+        const ambientLight = new THREE.AmbientLight(0xffffff, AMBIENT_LIGHT_INTENSITY); 
+        scene.add(ambientLight);
+    }
+
     scene.add(userRig);
 }
 
@@ -222,7 +232,7 @@ async function loadTextureAsync(url) {
     });
 }
 
-async function main() {
+async function init() {
     createAllMaterials();
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
@@ -1264,4 +1274,4 @@ function animate() {
 }
 
 // Initialize the application
-main();
+init();
