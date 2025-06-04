@@ -63,7 +63,7 @@ const UFO_ROTATION_SPEED = 0.01; // radians per frame
 const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibility)
 const NUM_LIGHTS = 8; // Number of lights on the UFO
 const BEAM_RADIUS = 20; // Radius of the UFO beam
-    
+
 // VR setttings
 const EYE_HEIGHT = 17; // Height of the user's eyes in world units, for VR camera positioning
 
@@ -106,7 +106,7 @@ function createAllMaterials() {
 
     // Skydome
     const starrySkyTexture = createStarrySkyTexture(SKY_TEXTURE_WIDTH, SKY_TEXTURE_HEIGHT, NUM_STARS, STAR_SIZE, STAR_VARIATION, TWILIGHT_OVERLAP);
-    MATERIALS.skydome.lambert = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide});
+    MATERIALS.skydome.lambert = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide });
     MATERIALS.skydome.phong = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide });
     MATERIALS.skydome.toon = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide });
     MATERIALS.skydome.basic = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide });
@@ -175,7 +175,7 @@ function createAllMaterials() {
 function createCameras() {
     fixedCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4);
     fixedCamera.position.set(HOUSE_POSITION.x + 100, HOUSE_POSITION.y + 80, HOUSE_POSITION.z - 400);
-    fixedCamera.lookAt(HOUSE_POSITION.x, HOUSE_POSITION.y + UFO_ALTITUDE /3, HOUSE_POSITION.z);
+    fixedCamera.lookAt(HOUSE_POSITION.x, HOUSE_POSITION.y + UFO_ALTITUDE / 3, HOUSE_POSITION.z);
 
     orbitalCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4);
     orbitalCamera.position.set(0, TERRAIN_WIDTH * 0.5, TERRAIN_WIDTH * 0.5); // Adjusted camera for new scale
@@ -184,7 +184,7 @@ function createCameras() {
     controls.dampingFactor = 0.05;
     controls.target.set(0, 100, 0);
     controls.update(); // Required after changing the target
-    
+
     vrCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4);
     vrCamera.position.set(0, 0, 0);
     // User rig for VR: move to fixedCamera's world position and orientation
@@ -192,7 +192,7 @@ function createCameras() {
     userRig.add(vrCamera);
     scene.add(userRig);
 
-    userRig.position.set(fixedCamera.position.x -50, EYE_HEIGHT + getTerrainHeight(fixedCamera.position.x -100, fixedCamera.position.z +50) + 2, fixedCamera.position.z+50); // Set user rig position to camera position
+    userRig.position.set(fixedCamera.position.x - 50, EYE_HEIGHT + getTerrainHeight(fixedCamera.position.x - 100, fixedCamera.position.z + 50) + 2, fixedCamera.position.z + 50); // Set user rig position to camera position
     userRig.quaternion.copy(fixedCamera.quaternion);
     userRig.updateMatrixWorld(true);
 
@@ -203,9 +203,9 @@ function createCameras() {
 
         console.log("VR Camera position: ", userRig.position);
         console.log("VR Camera quaternion: ", userRig.quaternion);
-        const helper = new THREE.Mesh( new THREE.BoxGeometry(5, EYE_HEIGHT, 5), 
+        const helper = new THREE.Mesh(new THREE.BoxGeometry(5, EYE_HEIGHT, 5),
             new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true })
-            )
+        )
         helper.position.set(0, - EYE_HEIGHT / 2, 0);
         userRig.add(
             new THREE.AxesHelper(20),
@@ -243,10 +243,10 @@ async function main() {
     document.body.appendChild(VRButton.createButton(renderer));
 
     // Listen for VR session start/end to switch cameras
-    renderer.xr.addEventListener('sessionstart', function() {
+    renderer.xr.addEventListener('sessionstart', function () {
         camera = vrCamera;
     });
-    renderer.xr.addEventListener('sessionend', function() {
+    renderer.xr.addEventListener('sessionend', function () {
         camera = fixedCamera; // or orbitalCamera, as desired
     });
 
@@ -270,8 +270,8 @@ async function main() {
     createMoon();
     createDirectionalLight();
     window.addEventListener("resize", onResize);
-    window.addEventListener('keydown', onKeyDown); 
-    window.addEventListener('keyup', onKeyUp); 
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
     renderer.setAnimationLoop(function () {
         if (scene && camera) renderer.render(scene, camera);
     });
@@ -708,8 +708,8 @@ function createBase() {
 
     const vertices = new Float32Array([
         // Frente
-        -60, 0, 30,  60, 0, 30,  60, 40, 30,
-        -60, 0, 30,  60, 40, 30, -60, 40, 30,
+        -60, 0, 30, 60, 0, 30, 60, 40, 30,
+        -60, 0, 30, 60, 40, 30, -60, 40, 30,
         // Trás
         -60, 0, -30, -60, 40, -30, 60, 40, -30,
         -60, 0, -30, 60, 40, -30, 60, 0, -30,
@@ -777,29 +777,29 @@ function createRoof() {
     const geometry = new THREE.BufferGeometry();
     const vertices = new Float32Array([
         // Base
-        -60, 40, -30,   -60, 40, 30,   60, 40, 30,
-        -60, 40, -30,   60, 40, 30,   60, 40, -30,
-        
+        -60, 40, -30, -60, 40, 30, 60, 40, 30,
+        -60, 40, -30, 60, 40, 30, 60, 40, -30,
+
         // Frontal and back triangles
-        60, 70, 0,   60, 40, 30,   60, 40, -30,
-        -60, 70, 0,  -60, 40, -30,   -60, 40, 30,
+        60, 70, 0, 60, 40, 30, 60, 40, -30,
+        -60, 70, 0, -60, 40, -30, -60, 40, 30,
 
         // Lateral rectangles
         // Right   
-        -60, 70, 0,   60, 40, 30,   60, 70, 0,
-        -60, 70, 0,  -60, 40, 30,   60, 40, 30,
+        -60, 70, 0, 60, 40, 30, 60, 70, 0,
+        -60, 70, 0, -60, 40, 30, 60, 40, 30,
 
         // Left slope
-        -60, 70, 0,   60, 70, 0,    60, 40, -30,
-        -60, 70, 0,   60, 40, -30,  -60, 40, -30,
-        
+        -60, 70, 0, 60, 70, 0, 60, 40, -30,
+        -60, 70, 0, 60, 40, -30, -60, 40, -30,
+
     ]);
-    
+
     geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
     geometry.computeVertexNormals();
     const mesh = new THREE.Mesh(geometry, roofOrange);
     mesh.position.y = 5;
-    
+
     return mesh;
 }
 
@@ -910,23 +910,23 @@ function createBox(width, height, depth, material) {
 
     const vertices = new Float32Array([
         // Frente
-        -w, -h, d,  w, -h, d,  w, h, d,
-        -w, -h, d,  w, h, d,  -w, h, d,
+        -w, -h, d, w, -h, d, w, h, d,
+        -w, -h, d, w, h, d, -w, h, d,
         // Trás
-        -w, -h, -d,  -w, h, -d,  w, h, -d,
-        -w, -h, -d,  w, h, -d,  w, -h, -d,
+        -w, -h, -d, -w, h, -d, w, h, -d,
+        -w, -h, -d, w, h, -d, w, -h, -d,
         // Esquerda
-        -w, -h, -d,  -w, -h, d,  -w, h, d,
-        -w, -h, -d,  -w, h, d,  -w, h, -d,
+        -w, -h, -d, -w, -h, d, -w, h, d,
+        -w, -h, -d, -w, h, d, -w, h, -d,
         // Direita
-        w, -h, -d,  w, h, -d,  w, h, d,
-        w, -h, -d,  w, h, d,  w, -h, d,
+        w, -h, -d, w, h, -d, w, h, d,
+        w, -h, -d, w, h, d, w, -h, d,
         // Topo
-        -w, h, -d,  -w, h, d,  w, h, d,
-        -w, h, -d,  w, h, d,  w, h, -d,
+        -w, h, -d, -w, h, d, w, h, d,
+        -w, h, -d, w, h, d, w, h, -d,
         // Base
-        -w, -h, -d,  w, -h, -d,  w, -h, d,
-        -w, -h, -d,  w, -h, d,  -w, -h, d,
+        -w, -h, -d, w, -h, -d, w, -h, d,
+        -w, -h, -d, w, -h, d, -w, -h, d,
     ]);
 
     geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
@@ -935,11 +935,11 @@ function createBox(width, height, depth, material) {
     return new THREE.Mesh(geometry, material);
 }
 
-function createChimneyTop(x, y, z){
+function createChimneyTop(x, y, z) {
     const chimneyTop = new THREE.Group();
     const blue = MATERIALS.house.blue[currentShading];
 
-     const chimneyBlue = createBox(32, 4, 12, blue);
+    const chimneyBlue = createBox(32, 4, 12, blue);
     chimneyBlue.position.set(x, y, z);
     chimneyTop.add(chimneyBlue);
 
@@ -1134,7 +1134,7 @@ function onKeyDown(e) {
                 camera = orbitalCamera;
                 if (controls) controls.enabled = true;
             }
-            else if(camera != vrCamera) {
+            else if (camera != vrCamera) {
                 camera = fixedCamera;
                 if (controls) controls.enabled = false;
             }
@@ -1191,7 +1191,7 @@ function onKeyDown(e) {
 
         case 67: // C
         case 99: // c
-            if (cheese_easter_egg_counter >= 20){
+            if (cheese_easter_egg_counter >= 20) {
                 isCheese = !isCheese; // Toggle cheese mode
                 console.log("Cheese mode toggled! The moon " + (isCheese ? "is" : "is not") + " made of cheese!");
             }
