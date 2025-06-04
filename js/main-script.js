@@ -78,7 +78,8 @@ const MATERIALS = {
     terrain: { lambert: null, phong: null, toon: null, basic: null },
     corkTree: {
         top: { lambert: null, phong: null, toon: null, basic: null },
-        trunk: { lambert: null, phong: null, toon: null, basic: null }
+        trunk: { lambert: null, phong: null, toon: null, basic: null },
+        branch: { lambert: null, phong: null, toon: null, basic: null }
     },
     ufo: {
         body: { lambert: null, phong: null, toon: null, basic: null },
@@ -95,7 +96,7 @@ const MATERIALS = {
 };
 
 let currentShading = 'toon'; // 'lambert', 'phong', 'toon'
-let lightingEnabled = true;
+let lightingEnabled = true; 
 
 function createAllMaterials() {
     // Terrain
@@ -129,15 +130,20 @@ function createAllMaterials() {
     // If cheese moon is enabled, replace the default moon material
 
     // Cork Tree (stem/branch: brown, top: green)
-    MATERIALS.corkTree.top.lambert = new THREE.MeshLambertMaterial({ color: 0x60d417 });
-    MATERIALS.corkTree.top.phong = new THREE.MeshPhongMaterial({ color: 0x60d417, shininess: 80 });
-    MATERIALS.corkTree.top.toon = new THREE.MeshToonMaterial({ color: 0x60d417 });
-    MATERIALS.corkTree.top.basic = new THREE.MeshBasicMaterial({ color: 0x60d417 });
+    MATERIALS.corkTree.top.lambert = new THREE.MeshLambertMaterial({ color: 0x2e6b1f }); // dark green
+    MATERIALS.corkTree.top.phong = new THREE.MeshPhongMaterial({ color: 0x2e6b1f, shininess: 80 });
+    MATERIALS.corkTree.top.toon = new THREE.MeshToonMaterial({ color: 0x2e6b1f });
+    MATERIALS.corkTree.top.basic = new THREE.MeshBasicMaterial({ color: 0x2e6b1f });
 
-    MATERIALS.corkTree.trunk.lambert = new THREE.MeshLambertMaterial({ color: 0x8b4513 });
-    MATERIALS.corkTree.trunk.phong = new THREE.MeshPhongMaterial({ color: 0x8b4513, shininess: 10 });
-    MATERIALS.corkTree.trunk.toon = new THREE.MeshToonMaterial({ color: 0x8b4513 });
-    MATERIALS.corkTree.trunk.basic = new THREE.MeshBasicMaterial({ color: 0x8b4513 });
+    MATERIALS.corkTree.trunk.lambert = new THREE.MeshLambertMaterial({ color: 0xc2611c });
+    MATERIALS.corkTree.trunk.phong = new THREE.MeshPhongMaterial({ color: 0xc2611c, shininess: 10 });
+    MATERIALS.corkTree.trunk.toon = new THREE.MeshToonMaterial({ color: 0xc2611c });
+    MATERIALS.corkTree.trunk.basic = new THREE.MeshBasicMaterial({ color: 0xc2611c });
+
+    MATERIALS.corkTree.branch.lambert = new THREE.MeshLambertMaterial({ color: 0x562c0f });
+    MATERIALS.corkTree.branch.phong = new THREE.MeshPhongMaterial({ color: 0x562c0f, shininess: 10 });
+    MATERIALS.corkTree.branch.toon = new THREE.MeshToonMaterial({ color: 0x562c0f });
+    MATERIALS.corkTree.branch.basic = new THREE.MeshBasicMaterial({ color: 0x562c0f });
 
     // UFO body
     MATERIALS.ufo.body.lambert = new THREE.MeshLambertMaterial({ color: 0x444444 });
@@ -555,7 +561,7 @@ function createCorkTree() {
     const STEM_HEIGHT = CORK_TREE_HEIGHT; // intended above-ground height
     const STEM_RADIUS = CORK_TREE_HEIGHT / 9;
     const STEM_ANTI_CLIP = 80; // world units stem extends below ground
-    const STEM_ROTATION = Math.PI / 10 + (Math.random() * Math.PI / 10 ); // Randomize stem rotation slightly
+    const STEM_ROTATION = Math.PI / 10 + (Math.random() * Math.PI / 12 ); // Randomize stem rotation slightly
     const BRANCH_ROTATION = STEM_ROTATION - Math.PI / 3;
     const BRANCH_SCALE = 0.5;
     const BRANCH_HEIGHT = STEM_HEIGHT * BRANCH_SCALE;
@@ -571,11 +577,12 @@ function createCorkTree() {
     stemMesh.position.set(0, STEM_HEIGHT / 2, 0);
 
     const branchGeometry = new THREE.CylinderGeometry(BRANCH_RADIUS, BRANCH_RADIUS, BRANCH_HEIGHT, 32);
-    const branchMesh = new THREE.Mesh(branchGeometry, MATERIALS.corkTree.trunk[currentShading]);
+    const branchMesh = new THREE.Mesh(branchGeometry, MATERIALS.corkTree.branch[currentShading]);
 
     const treeGroup = new THREE.Group();
     // Subgroups for easier material switching
     const trunkGroup = new THREE.Group();
+    const branchGroup = new THREE.Group();
     const topGroup = new THREE.Group();
 
     // Add branch to stem, and stem to tree group
@@ -585,7 +592,7 @@ function createCorkTree() {
 
     branchMesh.rotation.set(0, 0, BRANCH_ROTATION);
     branchMesh.position.set(
-        Math.sin(STEM_ROTATION) * STEM_HEIGHT + Math.sin(BRANCH_ROTATION) * BRANCH_HEIGHT / 2, 
+        Math.sin(STEM_ROTATION) * STEM_HEIGHT + Math.sin(BRANCH_ROTATION) * BRANCH_HEIGHT / 2 - BRANCH_RADIUS /2 , 
         Math.cos(STEM_ROTATION) * STEM_HEIGHT / 2, 
         0);
 
@@ -608,8 +615,9 @@ function createCorkTree() {
     topGroup.add(treeTop2);
 
     trunkGroup.add(stemMesh);
-    trunkGroup.add(branchMesh);
+    branchGroup.add(branchMesh);
 
+    treeGroup.add(branchGroup);
     treeGroup.add(trunkGroup);
     treeGroup.add(topGroup);
 
@@ -1048,6 +1056,9 @@ function applyShadingToScene() {
     }
     // Cork Trees
     for (const tree of corkTreeMeshes) {
+        tree.branchGroup.traverse(obj => {
+            if (obj.isMesh) obj.material = lightingEnabled ? MATERIALS.corkTree.branch[currentShading] : MATERIALS.corkTree.branch.basic;
+        });
         tree.trunkGroup.traverse(obj => {
             if (obj.isMesh) obj.material = lightingEnabled ? MATERIALS.corkTree.trunk[currentShading] : MATERIALS.corkTree.trunk.basic;
         });
