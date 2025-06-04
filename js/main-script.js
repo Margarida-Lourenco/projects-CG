@@ -592,7 +592,7 @@ function createCorkTree() {
 
     branchMesh.rotation.set(0, 0, BRANCH_ROTATION);
     branchMesh.position.set(
-        Math.sin(STEM_ROTATION) * STEM_HEIGHT + Math.sin(BRANCH_ROTATION) * BRANCH_HEIGHT / 2 - BRANCH_RADIUS /2 , 
+        Math.sin(STEM_ROTATION) * STEM_HEIGHT + Math.sin(BRANCH_ROTATION) * BRANCH_HEIGHT / 2 - BRANCH_RADIUS / 3 , 
         Math.cos(STEM_ROTATION) * STEM_HEIGHT / 2, 
         0);
 
@@ -607,7 +607,7 @@ function createCorkTree() {
     );
     // Place top2 at the end of the branch (top of branch, which starts at y = STEM_HEIGHT)
     treeTop2.position.set(
-        branchMesh.position.x - Math.sin(BRANCH_ROTATION) * BRANCH_HEIGHT / 2,
+        branchMesh.position.x - Math.sin(BRANCH_ROTATION) * BRANCH_HEIGHT / 2 - BRANCH_RADIUS / 3,
         (Math.cos(BRANCH_ROTATION) * BRANCH_HEIGHT + Math.cos(STEM_ROTATION) * STEM_HEIGHT) / 2,
         0);
 
