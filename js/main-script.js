@@ -290,7 +290,7 @@ async function init() {
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
     renderer.setAnimationLoop(function () {
-        if (scene && camera) renderer.render(scene, camera);
+        animate();
     });
     ufo = createUFO();
     ufo.position.set(HOUSE_POSITION.x, UFO_ALTITUDE, HOUSE_POSITION.z - 40);
@@ -298,7 +298,6 @@ async function init() {
     scene.add(houseMesh);
     scene.add(ufo);
     applyShadingToScene();
-    animate();
 }
 
 function createTerrain(heightmapTexture, floralTexture) {
@@ -1285,7 +1284,7 @@ function updateUFOMovement() {
 }
 
 function animate() {
-    requestAnimationFrame(animate);
+    //requestAnimationFrame(animate);
     updateUFOMovement();
     if (controls) controls.update();
     if (scene && camera) renderer.render(scene, camera);
