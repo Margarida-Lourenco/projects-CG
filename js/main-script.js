@@ -14,8 +14,8 @@ let cameras = [fixedCamera, orbitalCamera]; // Array to hold all cameras
 let keyStates = {}; // To store the state of pressed keys
 let userRig;
 
-const debugFlag = true; // Set to true to enable scene helpers
-let isCheese = false // Is the moon made of cheese?
+const debugFlag = false; // Set to true to enable scene helpers
+let isCheese = true // Is the moon made of cheese?
 let cheese_easter_egg_counter = isCheese ? 20 : 0; // Counter for cheese easter egg
 
 const TERRAIN_WIDTH = 3560;
@@ -24,7 +24,7 @@ const TERRAIN_SEGMENTS_WIDTH = 200; // Number of segments in the width. Smaller 
 const TERRAIN_SEGMENTS_HEIGHT = TERRAIN_SEGMENTS_WIDTH;
 const TEXTURE_WORLD_SIZE = 100; // Size of one texture tile in world units (both width and height)
 
-const HEIGHTMAP_SCALE = 600;
+const HEIGHTMAP_SCALE = 600; // Factor for displacement, affects terrain height
 const HEIGHTMAP_AREA_SELECTION_RATIO = 0.6; // Value between 0 (exclusive) and 1 (inclusive). 1 = full image, 0.5 = half area.
 // Original heightmap was 17.8km wide, so 0.2 = 3.56km wide
 // Original size * Scale / Width = IRL Meters per unit
@@ -36,17 +36,19 @@ const NUM_FLOWERS = 300; // Number of flowers in the floral field texture
 const FLOWER_SIZE = 1; // Minimum flower size in pixels
 const FLOWER_VARIATION = 2; // Variation in flower size in pixels
 
+// House settings
 const HOUSE_POSITION = new THREE.Vector3(200, 40, -500); // House position as a constant
-
 const NUM_TREES = 50; // Number of cork trees to place in the scene
 const CORK_TREE_HEIGHT = 70; // Height of the cork tree in world units
 
+// Moon settings
 const MOON_SCALE = 0.025; // Radius as percentage of terrain width
 const SKYDOME_SCALE = 0.5; // Radius as percentage of terrain width
 const MOON_ALTITUDE = 1 * Math.PI / 6; // Angle of moon above terrain relative to XZ plane
 const MOON_ANGLE = 2 * Math.PI / 3; // Angle of moon in radians relative to x axis
 const MOONLIGHT_INTENSITY = 0.7; // Intensity of the moonlight 0-1
 
+// Skydome settings
 const NUM_STARS = 2000; // Number of stars in the starry sky texture
 const STAR_SIZE = 0.1; // Minimum star size
 const STAR_VARIATION = 0.2; // Variation in star size
@@ -55,11 +57,15 @@ const SKY_TEXTURE_WIDTH = 4096 * 2; // Width of the starry sky texture
 const SKY_TEXTURE_HEIGHT = SKY_TEXTURE_WIDTH / 2; // Mapping is 2:1
 // Smaller height voids stretching at equator but more distortion at poles
 
+// UFO settings
 const UFO_ALTITUDE = 300; // Height of UFO above terrain
-const UFO_ROTATION_SPEED = 0.02; // radians per frame
+const UFO_ROTATION_SPEED = 0.01; // radians per frame
 const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibility)
 const NUM_LIGHTS = 8; // Number of lights on the UFO
 const BEAM_RADIUS = 20; // Radius of the UFO beam
+    
+// VR setttings
+const EYE_HEIGHT = 17; // Height of the user's eyes in world units, for VR camera positioning
 
 const MATERIALS = {
     moon: { lambert: null, phong: null, toon: null, basic: null },
@@ -165,6 +171,7 @@ function createAllMaterials() {
     MATERIALS.house.orange.basic = new THREE.MeshBasicMaterial({ color: 0xffa500 });
 }
 
+// depends on the heightmap to be loaded first
 function createCameras() {
     fixedCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4);
     fixedCamera.position.set(HOUSE_POSITION.x + 100, HOUSE_POSITION.y + 80, HOUSE_POSITION.z - 400);
@@ -172,33 +179,50 @@ function createCameras() {
 
     orbitalCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4);
     orbitalCamera.position.set(0, TERRAIN_WIDTH * 0.5, TERRAIN_WIDTH * 0.5); // Adjusted camera for new scale
-
+    controls = new OrbitControls(orbitalCamera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(0, 100, 0);
+    controls.update(); // Required after changing the target
+    
     vrCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4);
-
+    vrCamera.position.set(0, 0, 0);
     // User rig for VR: move to fixedCamera's world position and orientation
     userRig = new THREE.Group();
     userRig.add(vrCamera);
     scene.add(userRig);
 
-    userRig.position.copy(fixedCamera.position);
+    userRig.position.set(fixedCamera.position.x -50, EYE_HEIGHT + getTerrainHeight(fixedCamera.position.x -100, fixedCamera.position.z +50) + 2, fixedCamera.position.z+50); // Set user rig position to camera position
     userRig.quaternion.copy(fixedCamera.quaternion);
     userRig.updateMatrixWorld(true);
 
     // Debug: log rig and camera positions
     if (debugFlag) {
+        const vrCameraHelper = new THREE.CameraHelper(vrCamera);
+        scene.add(vrCameraHelper);
+
         console.log("VR Camera position: ", userRig.position);
         console.log("VR Camera quaternion: ", userRig.quaternion);
-        userRig.add(
-            new THREE.AxesHelper(20),
-            new THREE.Mesh( new THREE.BoxGeometry(5, 20, 5), 
+        const helper = new THREE.Mesh( new THREE.BoxGeometry(5, EYE_HEIGHT, 5), 
             new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true })
             )
+        helper.position.set(0, - EYE_HEIGHT / 2, 0);
+        userRig.add(
+            new THREE.AxesHelper(20),
+            helper
         ); // Make user rig visible in the scene
     }
     scene.add(userRig);
 }
 
-function init() {
+async function loadTextureAsync(url) {
+    return new Promise((resolve, reject) => {
+        const loader = new THREE.TextureLoader();
+        loader.load(url, resolve, undefined, reject);
+    });
+}
+
+async function main() {
     createAllMaterials();
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
@@ -216,7 +240,7 @@ function init() {
     renderer.xr.enabled = true;
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
-    document.body.appendChild( VRButton.createButton( renderer ));
+    document.body.appendChild(VRButton.createButton(renderer));
 
     // Listen for VR session start/end to switch cameras
     renderer.xr.addEventListener('sessionstart', function() {
@@ -226,49 +250,36 @@ function init() {
         camera = fixedCamera; // or orbitalCamera, as desired
     });
 
-    createCameras();
-    controls = new OrbitControls(orbitalCamera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.target.set(0, 100, 0);
-    controls.update(); // Required after changing the target
-
-    camera = orbitalCamera; // Set the default camera to fixedCamera so VR starts next to the house
-
-    createMoon(); // Moon position will be updated within this function based on TERRAIN_WIDTH
-    createDirectionalLight(); // Light position will be updated
-
-    // Load Heightmap and Create Terrain
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.load('textures/heightmap.png', function (heightmapTexture) {
-        const floralTexture = createFloralFieldTexture(TERRAIN_TEXTURE_WIDTH, TERRAIN_TEXTURE_HEIGHT, NUM_FLOWERS, FLOWER_SIZE, FLOWER_VARIATION);
-        floralTexture.wrapS = THREE.RepeatWrapping;
-        floralTexture.wrapT = THREE.RepeatWrapping;
-        floralTexture.repeat.set(TERRAIN_WIDTH / TEXTURE_WORLD_SIZE, TERRAIN_HEIGHT / TEXTURE_WORLD_SIZE); // Texture repeats based on world size
-        terrainMesh = createTerrain(heightmapTexture, floralTexture);
-
-        createSkydome();
-        placeCorkTrees();
-
-    }, undefined, function (error) {
+    // Await heightmap loading
+    let heightmapTexture;
+    try {
+        heightmapTexture = await loadTextureAsync('textures/heightmap.png');
+    } catch (error) {
         console.error('An error occurred while loading the heightmap:', error);
-    });
-
-    // Event Listeners
+        return;
+    }
+    const floralTexture = createFloralFieldTexture(TERRAIN_TEXTURE_WIDTH, TERRAIN_TEXTURE_HEIGHT, NUM_FLOWERS, FLOWER_SIZE, FLOWER_VARIATION);
+    floralTexture.wrapS = THREE.RepeatWrapping;
+    floralTexture.wrapT = THREE.RepeatWrapping;
+    floralTexture.repeat.set(TERRAIN_WIDTH / TEXTURE_WORLD_SIZE, TERRAIN_HEIGHT / TEXTURE_WORLD_SIZE);
+    terrainMesh = createTerrain(heightmapTexture, floralTexture);
+    createSkydome();
+    placeCorkTrees();
+    createCameras();
+    camera = orbitalCamera;
+    createMoon();
+    createDirectionalLight();
     window.addEventListener("resize", onResize);
     window.addEventListener('keydown', onKeyDown); 
     window.addEventListener('keyup', onKeyUp); 
-    renderer.setAnimationLoop( function () {
-        renderer.render( scene, camera );
-    } );
-
-    ufo = createUFO(); // Assign created UFO to global variable
+    renderer.setAnimationLoop(function () {
+        if (scene && camera) renderer.render(scene, camera);
+    });
+    ufo = createUFO();
     ufo.position.set(HOUSE_POSITION.x, UFO_ALTITUDE, HOUSE_POSITION.z - 40);
-
     houseMesh = createAlentejoHouse();
     scene.add(houseMesh);
     scene.add(ufo);
-
     applyShadingToScene();
     animate();
 }
@@ -1258,9 +1269,9 @@ function updateUFOMovement() {
 function animate() {
     requestAnimationFrame(animate);
     updateUFOMovement();
-    controls.update();
-    renderer.render(scene, camera);
+    if (controls) controls.update();
+    if (scene && camera) renderer.render(scene, camera);
 }
 
 // Initialize the application
-init();
+main();
