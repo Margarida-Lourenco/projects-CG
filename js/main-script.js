@@ -1083,11 +1083,6 @@ function regenerateFlowers() {
         MATERIALS.terrain[key].map = newFloralTexture;
         MATERIALS.terrain[key].map.needsUpdate = true;
     }
-
-    if (terrainMesh) {
-        terrainMesh.material.map = newFloralTexture;
-        terrainMesh.material.needsUpdate = true;
-    }
 }
 
 function regenerateStars() {
@@ -1096,11 +1091,6 @@ function regenerateStars() {
     for (const key in MATERIALS.skydome) {
         MATERIALS.skydome[key].map = newStarryTexture;
         MATERIALS.skydome[key].map.needsUpdate = true;
-    }
-
-    if (skydome) {
-        skydome.material.map = newStarryTexture;
-        skydome.material.needsUpdate = true;
     }
 }
 
