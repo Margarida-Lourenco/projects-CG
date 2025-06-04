@@ -10,7 +10,7 @@ let corkTreeMeshes = []; // Store references to cork tree groups
 let ufo, ufoGroup;
 let ufoBeamMesh, ufoLights = [];
 let fixedCamera, orbitalCamera, stereoCamera, vrCamera; // Cameras for different views
-let cameras = [fixedCamera, orbitalCamera]; // Array to hold all cameras
+let cameras = []; // Array to hold all cameras for updates
 let keyStates = {}; // To store the state of pressed keys
 let userRig;
 
@@ -222,6 +222,7 @@ function createCameras() {
         scene.add(ambientLight);
     }
 
+    cameras = [fixedCamera, orbitalCamera, vrCamera]; // Add cameras to the global array
     scene.add(userRig);
 }
 
@@ -1136,13 +1137,9 @@ function toggleLighting() {
 function onResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     if (window.innerHeight > 0 && window.innerWidth > 0) {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        fixedCamera.aspect = window.innerWidth / window.innerHeight;
-        fixedCamera.updateProjectionMatrix();
-        if (stereoCamera) {
-            stereoCamera.aspect = window.innerWidth / window.innerHeight;
-            stereoCamera.update(fixedCamera);
+        for (let cam of cameras) {
+            cam.aspect = window.innerWidth / window.innerHeight;
+            cam.updateProjectionMatrix();
         }
     }
 }
