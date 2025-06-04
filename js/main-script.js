@@ -682,7 +682,7 @@ function getTerrainHeight(x, z) {
 
 function createAlentejoHouse() {
     const house = new THREE.Group();
-    house.position.copy(HOUSE_POSITION);
+    house.position.set(HOUSE_POSITION.x, getTerrainHeight(HOUSE_POSITION.x, HOUSE_POSITION.z), HOUSE_POSITION.z);
 
     // Subgroups for easier material switching
     const whiteGroup = new THREE.Group();
