@@ -1112,14 +1112,14 @@ function setShadingMode(mode) {
 function toggleLighting() {
     lightingEnabled = !lightingEnabled;
     // Toggle all lights in the scene
-    if (directionalLight) directionalLight.visible = lightingEnabled;
-    if (ufoBeamMesh) {
-        const spotLight = ufoBeamMesh.children.find(child => child instanceof THREE.SpotLight);
-        if (spotLight) spotLight.visible = lightingEnabled;
-    }
-    for (let i = 0; i < ufoLights.length; i++) {
-        ufoLights[i].visible = lightingEnabled;
-    }
+    // if (directionalLight) directionalLight.visible = lightingEnabled;
+    // if (ufoBeamMesh) {
+    //     const spotLight = ufoBeamMesh.children.find(child => child instanceof THREE.SpotLight);
+    //     if (spotLight) spotLight.visible = lightingEnabled;
+    // }
+    // for (let i = 0; i < ufoLights.length; i++) {
+    //     ufoLights[i].visible = lightingEnabled;
+    // }
     applyShadingToScene();
 }
 
