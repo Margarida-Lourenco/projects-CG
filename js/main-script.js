@@ -551,18 +551,24 @@ function createUFO() {
 }
 
 function createCorkTree() {
-    const STEM_HEIGHT = CORK_TREE_HEIGHT;
+    const STEM_HEIGHT = CORK_TREE_HEIGHT; // intended above-ground height
     const STEM_RADIUS = CORK_TREE_HEIGHT / 9;
-    const STEM_ROTATION = Math.PI / 10;
+    const STEM_ANTI_CLIP = 80; // world units stem extends below ground
+    const STEM_ROTATION = Math.PI / 10 + (Math.random() * Math.PI / 10 ); // Randomize stem rotation slightly
     const BRANCH_ROTATION = STEM_ROTATION - Math.PI / 3;
     const BRANCH_SCALE = 0.5;
     const BRANCH_HEIGHT = STEM_HEIGHT * BRANCH_SCALE;
     const BRANCH_RADIUS = STEM_RADIUS * BRANCH_SCALE;
     const TOP_SIZE = STEM_HEIGHT * 0.2;
-    const STEM_ANTI_CLIP = 0.3;
-    // Use correct materials for stem/branch and top
-    const stemGeometry = new THREE.CylinderGeometry(STEM_RADIUS, STEM_RADIUS, STEM_HEIGHT * (1 + STEM_ANTI_CLIP), 32);
+
+    // Create stem geometry and move it down so the visible part starts at y=0 and anti-clip is below
+    const stemGeometry = new THREE.CylinderGeometry(STEM_RADIUS, STEM_RADIUS, STEM_HEIGHT + STEM_ANTI_CLIP, 32);
+    stemGeometry.translate(0, -STEM_ANTI_CLIP / 2, 0); // Move geometry down so y=0 is the base of the visible part
     const stemMesh = new THREE.Mesh(stemGeometry, MATERIALS.corkTree.trunk[currentShading]);
+
+    // Position the stem so its base is at y=0 (ground level)
+    stemMesh.position.set(0, STEM_HEIGHT / 2, 0);
+
     const branchGeometry = new THREE.CylinderGeometry(BRANCH_RADIUS, BRANCH_RADIUS, BRANCH_HEIGHT, 32);
     const branchMesh = new THREE.Mesh(branchGeometry, MATERIALS.corkTree.trunk[currentShading]);
 
@@ -571,25 +577,29 @@ function createCorkTree() {
     const trunkGroup = new THREE.Group();
     const topGroup = new THREE.Group();
 
-    stemMesh.position.set(0, 0, 0);
-
     // Add branch to stem, and stem to tree group
     stemMesh.add(branchMesh);
     treeGroup.add(stemMesh);
     stemMesh.rotation.set(0, 0, STEM_ROTATION);
-    stemMesh.position.set(0, -STEM_ANTI_CLIP * STEM_HEIGHT, 0); // Position stem above terrain
 
     branchMesh.rotation.set(0, 0, BRANCH_ROTATION);
-    branchMesh.position.set(Math.sin(STEM_ROTATION) * STEM_HEIGHT, Math.cos(STEM_ROTATION) * STEM_HEIGHT / 2, 0);
+    branchMesh.position.set(
+        Math.sin(STEM_ROTATION) * STEM_HEIGHT + Math.sin(BRANCH_ROTATION) * BRANCH_HEIGHT / 2, 
+        Math.cos(STEM_ROTATION) * STEM_HEIGHT / 2, 
+        0);
 
     const treeTop1 = createCorkTreeTop(TOP_SIZE);
-    const treeTop2 = createCorkTreeTop(TOP_SIZE / 2);
+    const treeTop2 = createCorkTreeTop(TOP_SIZE * BRANCH_SCALE);
 
-    // Move the stem so its base is at y = 0 (root of the tree at base)
-    stemMesh.position.set(0, STEM_HEIGHT / 2, 0);
-    treeTop1.position.set(-Math.sin(STEM_ROTATION) * STEM_HEIGHT / 2, STEM_HEIGHT, 0); // Position top at the end of the stem
+    // Position tree tops at the very top of the visible stem (y = STEM_HEIGHT)
+    treeTop1.position.set(
+        stemMesh.position.x - Math.sin(STEM_ROTATION) * STEM_HEIGHT / 2,
+        STEM_HEIGHT,
+        0
+    );
+    // Place top2 at the end of the branch (top of branch, which starts at y = STEM_HEIGHT)
     treeTop2.position.set(
-        Math.sin(STEM_ROTATION) * STEM_HEIGHT / 2 - Math.sin(BRANCH_ROTATION) * BRANCH_HEIGHT,
+        branchMesh.position.x - Math.sin(BRANCH_ROTATION) * BRANCH_HEIGHT / 2,
         (Math.cos(BRANCH_ROTATION) * BRANCH_HEIGHT + Math.cos(STEM_ROTATION) * STEM_HEIGHT) / 2,
         0);
 
