@@ -96,7 +96,7 @@ const MATERIALS = {
 };
 
 let currentShading = 'toon'; // 'lambert', 'phong', 'toon'
-let lightingEnabled = true; 
+let lightingEnabled = true;
 
 function createAllMaterials() {
     // Terrain
@@ -224,7 +224,7 @@ function createCameras() {
     }
 
     if (AMBIENT_LIGHT_INTENSITY > 0) {
-        const ambientLight = new THREE.AmbientLight(0xffffff, AMBIENT_LIGHT_INTENSITY); 
+        const ambientLight = new THREE.AmbientLight(0xffffff, AMBIENT_LIGHT_INTENSITY);
         scene.add(ambientLight);
     }
 
@@ -560,7 +560,7 @@ function createCorkTree() {
     const STEM_HEIGHT = CORK_TREE_HEIGHT; // intended above-ground height
     const STEM_RADIUS = CORK_TREE_HEIGHT / 9;
     const STEM_ANTI_CLIP = 80; // world units stem extends below ground
-    const STEM_ROTATION = Math.PI / 10 + (Math.random() * Math.PI / 12 ); // Randomize stem rotation slightly
+    const STEM_ROTATION = Math.PI / 10 + (Math.random() * Math.PI / 16); // Randomize stem rotation slightly
     const BRANCH_ROTATION = STEM_ROTATION - Math.PI / 3;
     const BRANCH_SCALE = 0.5;
     const BRANCH_HEIGHT = STEM_HEIGHT * BRANCH_SCALE;
@@ -591,8 +591,8 @@ function createCorkTree() {
 
     branchMesh.rotation.set(0, 0, BRANCH_ROTATION);
     branchMesh.position.set(
-        Math.sin(STEM_ROTATION) * STEM_HEIGHT + Math.sin(BRANCH_ROTATION) * BRANCH_HEIGHT / 2 - BRANCH_RADIUS / 3 , 
-        Math.cos(STEM_ROTATION) * STEM_HEIGHT / 2, 
+        Math.sin(STEM_ROTATION) * STEM_HEIGHT + Math.sin(BRANCH_ROTATION) * BRANCH_HEIGHT / 2 - BRANCH_RADIUS / 3,
+        Math.cos(STEM_ROTATION) * STEM_HEIGHT / 2,
         0);
 
     const treeTop1 = createCorkTreeTop(TOP_SIZE);
@@ -606,7 +606,7 @@ function createCorkTree() {
     );
     // Place top2 at the end of the branch (top of branch, which starts at y = STEM_HEIGHT)
     treeTop2.position.set(
-        branchMesh.position.x - Math.sin(BRANCH_ROTATION) * BRANCH_HEIGHT / 2 - BRANCH_RADIUS / 3,
+        branchMesh.position.x - Math.sin(BRANCH_ROTATION) * (BRANCH_HEIGHT / 2 + BRANCH_RADIUS),
         (Math.cos(BRANCH_ROTATION) * BRANCH_HEIGHT + Math.cos(STEM_ROTATION) * STEM_HEIGHT) / 2,
         0);
 
@@ -621,6 +621,7 @@ function createCorkTree() {
     treeGroup.add(topGroup);
 
     // Attach subgroups for material switching
+    treeGroup.branchGroup = branchGroup;
     treeGroup.trunkGroup = trunkGroup;
     treeGroup.topGroup = topGroup;
 
