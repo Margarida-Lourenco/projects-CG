@@ -68,7 +68,7 @@ const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibi
 const NUM_LIGHTS = 8; // Number of lights on the UFO
 const BEAM_RADIUS = 20; // Radius of the UFO beam
 
-// VR setttings
+// VR and Camera setttings
 const EYE_HEIGHT = 17; // Height of the user's eyes in world units, for VR camera positioning
 
 const MATERIALS = {
@@ -95,7 +95,7 @@ const MATERIALS = {
     cheese: { lambert: null, phong: null, toon: null, basic: null }
 };
 
-let currentShading = 'toon'; // 'lambert', 'phong', 'toon'
+let currentShading = 'lambert'; // 'lambert', 'phong', 'toon'
 let lightingEnabled = true;
 let lookingAt = new THREE.Vector3(); // Position of the object currently being looked at
 
@@ -662,6 +662,16 @@ function placeCorkTrees() {
                 attempts++;
                 continue;
             }
+
+            // Check distance to camera
+            if (fixedCamera) {
+                const cameraPos = new THREE.Vector3(fixedCamera.position.x, fixedCamera.position.y, fixedCamera.position.z);
+                if (treePos.distanceTo(cameraPos) < MIN_TREE_DISTANCE) {
+                    attempts++;
+                    continue;
+                }
+            }
+
             // Check distance to all other trees
             let tooClose = false;
             for (let j = 0; j < trees.length; j++) {
