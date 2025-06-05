@@ -97,6 +97,7 @@ const MATERIALS = {
 
 let currentShading = 'toon'; // 'lambert', 'phong', 'toon'
 let lightingEnabled = true;
+let lookingAt = new THREE.Vector3(); // Position of the object currently being looked at
 
 function createAllMaterials() {
     // Terrain
@@ -225,6 +226,7 @@ function createCameras() {
         ); // Make user rig visible in the scene
     }
 
+    // ***OPTIONAL*** ambient light
     if (AMBIENT_LIGHT_INTENSITY > 0) {
         const ambientLight = new THREE.AmbientLight(0xffffff, AMBIENT_LIGHT_INTENSITY);
         scene.add(ambientLight);
@@ -1258,36 +1260,60 @@ function onKeyUp(e) {
     }
 }
 
+// UFO moves as a function of camera looking at vectoe
 function updateUFOMovement() {
     if (!ufo) return;
-
     // Rotation
     ufo.rotation.y += UFO_ROTATION_SPEED;
 
-    // Horizontal movement
-    let moveDirection = new THREE.Vector3();
-    if (keyStates['arrowleft']) {
-        moveDirection.x -= 1;
+    // Forward direction (projected to XZ plane)
+    let forward = new THREE.Vector3();
+    if (lookingAt) {
+        forward.copy(lookingAt).setY(0).normalize();
+    } else {
+        forward.set(0, 0, -1);
     }
-    if (keyStates['arrowright']) {
-        moveDirection.x += 1;
-    }
+    // Right vector (perpendicular to forward, in XZ plane)
+    let right = new THREE.Vector3();
+    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+    let moveVector = new THREE.Vector3();
     if (keyStates['arrowup']) {
-        moveDirection.z -= 1;
+        moveVector.add(forward);
     }
     if (keyStates['arrowdown']) {
-        moveDirection.z += 1;
+        moveVector.add(forward.clone().negate());
     }
-
-    if (moveDirection.lengthSq() > 0) { // Check if there is any movement input
-        moveDirection.normalize().multiplyScalar(UFO_MOVEMENT_SPEED);
-        ufo.position.add(moveDirection);
+    if (keyStates['arrowright']) {
+        moveVector.add(right);
     }
+    if (keyStates['arrowleft']) {
+        moveVector.add(right.clone().negate());
+    }
+    if (moveVector.lengthSq() > 0) {
+        moveVector.normalize().multiplyScalar(UFO_MOVEMENT_SPEED);
+        let oldPosition = ufo.position.clone();
+        ufo.position.add(moveVector);
+        if (Math.sqrt(Math.pow(ufo.position.x, 2) + Math.pow(ufo.position.z, 2)) > TERRAIN_WIDTH / 2 - 50) {
+            // If UFO goes out of bounds, revert to old position
+            ufo.position.copy(oldPosition);
+        }
+    }
+}
 
+function updateLookingAt() {
+    if (!camera || !ufo) return;
+
+    // Calculate the camera direction vector
+    const cameraDirection = new THREE.Vector3();
+    camera.getWorldDirection(cameraDirection);
+
+    lookingAt.copy(cameraDirection).normalize();
 }
 
 function animate() {
     //requestAnimationFrame(animate);
+    updateLookingAt();
     updateUFOMovement();
     if (controls) controls.update();
     if (scene && camera) renderer.render(scene, camera);
