@@ -533,7 +533,7 @@ function createUFO() {
         lightMesh.position.z = Math.sin(angle) * lightRadius;
         lightMesh.position.y = - Math.sqrt(bodyRadius * bodyRadius - lightRadius * lightRadius) * bodyFlattening; //Pin lights to surface of UFO body 
 
-        const pointLight = new THREE.PointLight(0x00ff33, 100, 0, 3); // color, intensity, distance
+        const pointLight = new THREE.PointLight(0x00ff33, 100, 0, 2.1); // color, intensity, distance
 
         lightMesh.add(pointLight);
         ufoLights.push(pointLight);
