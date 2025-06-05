@@ -117,15 +117,15 @@ function createAllMaterials() {
     MATERIALS.skydome.basic = new THREE.MeshBasicMaterial({ map: starrySkyTexture, color: 0xffffff, side: THREE.BackSide });
 
     // Moon
-    MATERIALS.moon.lambert = new THREE.MeshBasicMaterial({ color: 0xffffaa });
-    MATERIALS.moon.phong = new THREE.MeshBasicMaterial({ color: 0xffffaa });
-    MATERIALS.moon.toon = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+    MATERIALS.moon.lambert = new THREE.MeshLambertMaterial({ color: 0xffffaa, emissive: 0xffffaa, emissiveIntensity: 1 });
+    MATERIALS.moon.phong = new THREE.MeshPhongMaterial({ color: 0xffffaa, emissive: 0xffffaa, emissiveIntensity: 0.8, shininess: 30 });
+    MATERIALS.moon.toon = new THREE.MeshToonMaterial({ color: 0xffffaa, emissive: 0xffffaa, emissiveIntensity: 0.8 });
     MATERIALS.moon.basic = new THREE.MeshBasicMaterial({ color: 0xfffff0 });
 
-    const cheeseTexture = createCheeseTexture(2048, 1024, 15, 10, 20);
-    MATERIALS.cheese.lambert = new THREE.MeshBasicMaterial({ map: cheeseTexture });
-    MATERIALS.cheese.phong = new THREE.MeshBasicMaterial({ map: cheeseTexture });
-    MATERIALS.cheese.toon = new THREE.MeshBasicMaterial({ map: cheeseTexture });
+    const cheeseTexture = createCheeseTexture(2048, 1024, 15, 10, 20); // texture is also used for emissive map as a hack
+    MATERIALS.cheese.lambert = new THREE.MeshLambertMaterial({ map: cheeseTexture, emissiveMap: cheeseTexture, emissive: 0xffffff, emissiveIntensity: 0.8 });
+    MATERIALS.cheese.phong = new THREE.MeshPhongMaterial({ map: cheeseTexture, emissiveMap: cheeseTexture, emissive: 0xffffff, emissiveIntensity: 0.8, shininess: 30 });
+    MATERIALS.cheese.toon = new THREE.MeshToonMaterial({ map: cheeseTexture, emissiveMap: cheeseTexture, emissive: 0xffffff, emissiveIntensity: 0.8 });
     MATERIALS.cheese.basic = new THREE.MeshBasicMaterial({ map: cheeseTexture });
     // If cheese moon is enabled, replace the default moon material
 
