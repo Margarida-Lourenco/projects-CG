@@ -187,13 +187,15 @@ function createCameras() {
     fixedCamera.position.set(HOUSE_POSITION.x + 100, HOUSE_POSITION.y + 80, HOUSE_POSITION.z - 400);
     fixedCamera.lookAt(HOUSE_POSITION.x, HOUSE_POSITION.y + UFO_ALTITUDE / 3, HOUSE_POSITION.z);
 
-    orbitalCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4);
-    orbitalCamera.position.set(0, TERRAIN_WIDTH * 0.5, TERRAIN_WIDTH * 0.5); // Adjusted camera for new scale
-    controls = new OrbitControls(orbitalCamera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.target.set(0, 100, 0);
-    controls.update(); // Required after changing the target
+    if (debugFlag) {
+        orbitalCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4);
+        orbitalCamera.position.set(0, TERRAIN_WIDTH * 0.5, TERRAIN_WIDTH * 0.5); // Adjusted camera for new scale
+        controls = new OrbitControls(orbitalCamera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 100, 0);
+        controls.update(); // Required after changing the target
+    }
 
     vrCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, TERRAIN_WIDTH * 4);
     vrCamera.position.set(0, 0, 0);
@@ -283,7 +285,7 @@ async function init() {
     createSkydome();
     placeCorkTrees();
     createCameras();
-    camera = orbitalCamera;
+    camera = debugFlag ? orbitalCamera : fixedCamera; // Default camera for non-VR mode
     createMoon();
     createDirectionalLight();
     window.addEventListener("resize", onResize);
@@ -1159,11 +1161,11 @@ function onKeyDown(e) {
     switch (e.keyCode) {
         case 55: //7
             if (camera === fixedCamera) {
-                camera = orbitalCamera;
+                if(orbitalCamera) camera = orbitalCamera;
                 if (controls) controls.enabled = true;
             }
             else if (camera != vrCamera) {
-                camera = fixedCamera;
+                if(fixedCamera) camera = fixedCamera;
                 if (controls) controls.enabled = false;
             }
             break;
