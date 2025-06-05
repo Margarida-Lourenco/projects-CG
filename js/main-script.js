@@ -19,7 +19,7 @@ const debugFlag = false; // Set to true to enable scene helpers
 // OPTIONALS
 let isCheese = false // Is the moon made of cheese?
 let cheese_easter_egg_counter = isCheese ? 20 : 0; // Counter for cheese easter egg
-const AMBIENT_LIGHT_INTENSITY = 0.05; // Ambient light intensity, 0-1D
+const AMBIENT_LIGHT_INTENSITY = 0; // Ambient light intensity, 0-1D
 
 // Terrain settings
 const TERRAIN_WIDTH = 3560;
