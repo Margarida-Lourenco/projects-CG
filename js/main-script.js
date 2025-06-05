@@ -1163,6 +1163,7 @@ function onResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     if (window.innerHeight > 0 && window.innerWidth > 0) {
         for (let cam of cameras) {
+            if (!cam) continue; // Skip undefined cameras
             cam.aspect = window.innerWidth / window.innerHeight;
             cam.updateProjectionMatrix();
         }
