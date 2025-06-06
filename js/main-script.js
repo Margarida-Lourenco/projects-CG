@@ -2,14 +2,13 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { VRButton } from "three/addons/webxr/VRButton.js";
 import { createFloralFieldTexture, createStarrySkyTexture, createCheeseTexture } from './procedural-textures.js';
-import { StereoCamera } from "three";
 
 let scene, camera, renderer, controls;
 let terrainMesh, moonMesh, directionalLight, houseMesh, skydomeMesh; // Store reference to skydome
 let corkTreeMeshes = []; // Store references to cork tree groups
 let ufo, ufoGroup;
-let ufoBeamMesh, ufoLights = [];
-let fixedCamera, orbitalCamera, stereoCamera, vrCamera; // Cameras for different views
+let ufoBeamMesh, ufoLights = []; // Store references to UFO lights
+let fixedCamera, orbitalCamera, vrCamera; // Cameras for different views
 let cameras = []; // Array to hold all cameras for updates
 let keyStates = {}; // To store the state of pressed keys
 let userRig;
@@ -19,12 +18,12 @@ const debugFlag = false; // Set to true to enable scene helpers
 // OPTIONALS
 let isCheese = false // Is the moon made of cheese?
 let cheese_easter_egg_counter = isCheese ? 20 : 0; // Counter for cheese easter egg
-const AMBIENT_LIGHT_INTENSITY = 0; // Ambient light intensity, 0-1D
+const AMBIENT_LIGHT_INTENSITY = 0; // Ambient light intensity, 0-1D - if 0, no ambient light will be added
 
 // Terrain settings
 const TERRAIN_WIDTH = 3560;
 const TERRAIN_HEIGHT = TERRAIN_WIDTH;
-const TERRAIN_SEGMENTS_WIDTH = 200; // Number of segments in the width. Smaller values are smoother but less detailed
+const TERRAIN_SEGMENTS_WIDTH = 200; // Number of segments in the width
 const TERRAIN_SEGMENTS_HEIGHT = TERRAIN_SEGMENTS_WIDTH;
 const TEXTURE_WORLD_SIZE = 100; // Size of one texture tile in world units (both width and height)
 
@@ -41,7 +40,7 @@ const FLOWER_SIZE = 1; // Minimum flower size in pixels
 const FLOWER_VARIATION = 2; // Variation in flower size in pixels
 
 // House settings
-const HOUSE_POSITION = new THREE.Vector3(200, 40, -500); // House position as a constant
+const HOUSE_POSITION = new THREE.Vector3(200, 40, -500); 
 const NUM_TREES = 50; // Number of cork trees to place in the scene
 const CORK_TREE_HEIGHT = 70; // Height of the cork tree in world units
 
@@ -50,7 +49,7 @@ const MOON_SCALE = 0.025; // Radius as percentage of terrain width
 const SKYDOME_SCALE = 0.5; // Radius as percentage of terrain width
 const MOON_ALTITUDE = 1 * Math.PI / 6; // Angle of moon above terrain relative to XZ plane
 const MOON_ANGLE = 2 * Math.PI / 3; // Angle of moon in radians relative to x axis
-const MOONLIGHT_INTENSITY = 0.7; // Intensity of the moonlight 0-1
+const MOONLIGHT_INTENSITY = 0.7; // Intensity of the moonlight 0-1, if 0, no moonlight will be added
 
 // Skydome settings
 const NUM_STARS = 2000; // Number of stars in the starry sky texture
@@ -59,39 +58,41 @@ const STAR_VARIATION = 0.2; // Variation in star size
 const TWILIGHT_OVERLAP = 1; // How much the twilight gradient overlaps with stars (0-1) * 30%
 const SKY_TEXTURE_WIDTH = 4096 * 2; // Width of the starry sky texture
 const SKY_TEXTURE_HEIGHT = SKY_TEXTURE_WIDTH / 2; // Mapping is 2:1
-// Smaller height voids stretching at equator but more distortion at poles
+// Smaller height avoids stretching at equator but more distortion at poles
 
 // UFO settings
 const UFO_ALTITUDE = 300; // Height of UFO above terrain
 const UFO_ROTATION_SPEED = 0.01; // radians per frame
 const UFO_MOVEMENT_SPEED = 0.8;  // units per frame (increased for better visibility)
 const NUM_LIGHTS = 8; // Number of lights on the UFO
-const BEAM_RADIUS = 20; // Radius of the UFO beam
 
 // VR and Camera setttings
 const EYE_HEIGHT = 17; // Height of the user's eyes in world units, for VR camera positioning
 
 const MATERIALS = {
-    moon: { lambert: null, phong: null, toon: null, basic: null },
-    floral: { lambert: null, phong: null, toon: null, basic: null },
+    moon:    { lambert: null, phong: null, toon: null, basic: null },
+    floral:  { lambert: null, phong: null, toon: null, basic: null },
     skydome: { lambert: null, phong: null, toon: null, basic: null },
     terrain: { lambert: null, phong: null, toon: null, basic: null },
+
     corkTree: {
-        top: { lambert: null, phong: null, toon: null, basic: null },
-        trunk: { lambert: null, phong: null, toon: null, basic: null },
+        top:    { lambert: null, phong: null, toon: null, basic: null },
+        trunk:  { lambert: null, phong: null, toon: null, basic: null },
         branch: { lambert: null, phong: null, toon: null, basic: null }
     },
+
     ufo: {
-        body: { lambert: null, phong: null, toon: null, basic: null },
+        body:    { lambert: null, phong: null, toon: null, basic: null },
         cockpit: { lambert: null, phong: null, toon: null, basic: null },
-        beam: { lambert: null, phong: null, toon: null, basic: null },
-        lights: { lambert: null, phong: null, toon: null, basic: null }
+        beam:    { lambert: null, phong: null, toon: null, basic: null },
+        lights:  { lambert: null, phong: null, toon: null, basic: null }
     },
     house: {
-        white: { lambert: null, phong: null, toon: null, basic: null },
-        blue: { lambert: null, phong: null, toon: null, basic: null },
+        white:  { lambert: null, phong: null, toon: null, basic: null },
+        blue:   { lambert: null, phong: null, toon: null, basic: null },
         orange: { lambert: null, phong: null, toon: null, basic: null },
     },
+
     cheese: { lambert: null, phong: null, toon: null, basic: null }
 };
 
@@ -123,6 +124,7 @@ function createAllMaterials() {
     MATERIALS.moon.toon = new THREE.MeshToonMaterial({ color: 0xffffaa, emissive: 0xffffaa, emissiveIntensity: 0.8 });
     MATERIALS.moon.basic = new THREE.MeshBasicMaterial({ color: 0xfffff0 });
 
+    // Cheese moon
     const cheeseTexture = createCheeseTexture(2048, 1024, 15, 10, 20); // texture is also used for emissive map as a hack
     MATERIALS.cheese.lambert = new THREE.MeshLambertMaterial({ map: cheeseTexture, emissiveMap: cheeseTexture, emissive: 0xffffff, emissiveIntensity: 0.8 });
     MATERIALS.cheese.phong = new THREE.MeshPhongMaterial({ map: cheeseTexture, emissiveMap: cheeseTexture, emissive: 0xffffff, emissiveIntensity: 0.8, shininess: 30 });
@@ -250,7 +252,6 @@ async function init() {
     if (debugFlag) {
         const axesHelper = new THREE.AxesHelper(1000);
         scene.add(axesHelper);
-        //grid is currently slightly misaligned with the texture repetition pattern seams
         const gridHelper = new THREE.GridHelper(TERRAIN_WIDTH, TERRAIN_WIDTH / TEXTURE_WORLD_SIZE);
         scene.add(gridHelper);
         axesHelper.position.set(0, 0, 0);
@@ -283,7 +284,7 @@ async function init() {
     floralTexture.wrapS = THREE.RepeatWrapping;
     floralTexture.wrapT = THREE.RepeatWrapping;
     floralTexture.repeat.set(TERRAIN_WIDTH / TEXTURE_WORLD_SIZE, TERRAIN_HEIGHT / TEXTURE_WORLD_SIZE);
-    terrainMesh = createTerrain(heightmapTexture, floralTexture);
+    terrainMesh = createTerrain(heightmapTexture);
     createSkydome();
     placeCorkTrees();
     createCameras();
@@ -304,7 +305,7 @@ async function init() {
     applyShadingToScene();
 }
 
-function createTerrain(heightmapTexture, floralTexture) {
+function createTerrain(heightmapTexture) {
     const terrainGeometry = new THREE.PlaneGeometry(
         TERRAIN_WIDTH,
         TERRAIN_HEIGHT,
@@ -363,7 +364,7 @@ function createTerrain(heightmapTexture, floralTexture) {
             const ty = Math.min(Math.floor(v * effectiveHeight), effectiveHeight - 1);
 
             // Calculate pixelIndex using effectiveWidth (the width of the data we are sampling from)
-            const pixelIndex = (ty * effectiveWidth + tx) * 4; // R, G, B, A
+            const pixelIndex = (ty * effectiveWidth + tx) * 4; // R, G, B, A  
 
             if (pixelIndex >= 0 && pixelIndex < heightmapData.length) {
                 const heightValue = heightmapData[pixelIndex] / 255; // Use Red channel, normalize to 0-1
@@ -643,7 +644,7 @@ function placeCorkTrees() {
     const trees = [];
     const MIN_TREE_DISTANCE = 70; // Minimum distance between trees (adjust as needed)
     const HOUSE_RADIUS = 180; // Minimum distance from house (adjust as needed)
-    const housePos = HOUSE_POSITION.clone(); // Use the constant
+    const housePos = HOUSE_POSITION.clone(); 
     for (let i = 0; i < NUM_TREES; i++) {
         const tree = createCorkTree();
         const radius = TERRAIN_WIDTH * 0.48;
@@ -750,22 +751,22 @@ function createBase() {
     const geometry = new THREE.BufferGeometry();
 
     const vertices = new Float32Array([
-        // Frente
+        // Front
         -60, 0, 30, 60, 0, 30, 60, 40, 30,
         -60, 0, 30, 60, 40, 30, -60, 40, 30,
-        // Trás
+        // Back
         -60, 0, -30, -60, 40, -30, 60, 40, -30,
         -60, 0, -30, 60, 40, -30, 60, 0, -30,
-        // Topo
+        // Top
         -60, 40, -30, -60, 40, 30, 60, 40, 30,
         -60, 40, -30, 60, 40, 30, 60, 40, -30,
-        // Fundo
+        // Bottom
         -60, 0, -30, 60, 0, -30, 60, 0, 30,
         -60, 0, -30, 60, 0, 30, -60, 0, 30,
-        // Direita
+        // Right
         60, 0, -30, 60, 40, -30, 60, 40, 30,
         60, 0, -30, 60, 40, 30, 60, 0, 30,
-        // Esquerda
+        // Left
         -60, 0, -30, -60, 0, 30, -60, 40, 30,
         -60, 0, -30, -60, 40, 30, -60, 40, -30
     ]);
@@ -785,22 +786,22 @@ function createBaseTrim() {
     const geometry = new THREE.BufferGeometry();
 
     const vertices = new Float32Array([
-        // Frente
+        // Front
         -60.05, 0, 30.05, 60.05, 0, 30.05, 60.05, 5, 30.05,
         -60.05, 0, 30.05, 60.05, 5, 30.05, -60.05, 5, 30.05,
-        // Trás
+        // Back
         -60.05, 0, -30.05, -60.05, 5, -30.05, 60.05, 5, -30.05,
         -60.05, 0, -30.05, 60.05, 5, -30.05, 60.05, 0, -30.05,
-        // Topo
+        // Top
         -60.05, 5, -30.05, -60.05, 5, 30.05, 60.05, 5, 30.05,
         -60.05, 5, -30.05, 60.05, 5, 30.05, 60.05, 5, -30.05,
-        // Fundo
+        // Bottom
         -60.05, 0, -30.05, 60.05, 0, -30.05, 60.05, 0, 30.05,
         -60.05, 0, -30.05, 60.05, 0, 30.05, -60.05, 0, 30.05,
-        // Direita
+        // Right
         60.05, 0, -30.05, 60.05, 5, -30.05, 60.05, 5, 30.05,
         60.05, 0, -30.05, 60.05, 5, 30.05, 60.05, 0, 30.05,
-        // Esquerda
+        // Left
         -60.05, 0, -30.05, -60.05, 0, 30.05, -60.05, 5, 30.05,
         -60.05, 0, -30.05, -60.05, 5, 30.05, -60.05, 5, -30.05
     ]);
@@ -827,12 +828,11 @@ function createRoof() {
         60, 70, 0, 60, 40, 30, 60, 40, -30,
         -60, 70, 0, -60, 40, -30, -60, 40, 30,
 
-        // Lateral rectangles
-        // Right   
+        // Lateral right rectangle  
         -60, 70, 0, 60, 40, 30, 60, 70, 0,
         -60, 70, 0, -60, 40, 30, 60, 40, 30,
 
-        // Left slope
+        // Lateral left rectangle 
         -60, 70, 0, 60, 70, 0, 60, 40, -30,
         -60, 70, 0, 60, 40, -30, -60, 40, -30,
 
@@ -850,10 +850,10 @@ function createRoof() {
 function createWindowFrame() {
     const geometry = new THREE.BufferGeometry();
     const vertices = new Float32Array([
-        // Frente
+        // Front
         -6, -6, 1, 6, -6, 1, 6, 6, 1,
         -6, -6, 1, 6, 6, 1, -6, 6, 1,
-        // Trás
+        // Back
         -6, -6, -1, -6, 6, -1, 6, 6, -1,
         -6, -6, -1, 6, 6, -1, 6, -6, -1,
     ]);
@@ -879,13 +879,13 @@ function createFrontWindows() {
 function createFrontDoor() {
     const geometry = new THREE.BufferGeometry();
     const vertices = new Float32Array([
-        // Frente
+        // Front
         -7, -12, 1, 7, -12, 1, 7, 12, 1,
         -7, -12, 1, 7, 12, 1, -7, 12, 1,
-        // Trás
+        // Back
         -7, -12, -1, -7, 12, -1, 7, 12, -1,
         -7, -12, -1, 7, 12, -1, 7, -12, -1,
-        // Laterais, topo e base...
+        // Laterals, top and bottom
         -7, -12, -1, -7, -12, 1, -7, 12, 1,
         -7, -12, -1, -7, 12, 1, -7, 12, -1,
 
@@ -910,13 +910,13 @@ function createFrontDoor() {
 function createSideDoor() {
     const geometry = new THREE.BufferGeometry();
     const vertices = new Float32Array([
-        // Frente
+        // Front
         -6, -12, 5, 6, -12, 5, 6, 12, 5,
         -6, -12, 5, 6, 12, 5, -6, 12, 5,
-        // Trás
+        // Back
         -6, -12, -5, -6, 12, -5, 6, 12, -5,
         -6, -12, -5, 6, 12, -5, 6, -12, -5,
-        // Laterais, topo e base...
+        // laterals, top and bottom...
         -6, -12, -5, -6, -12, 5, -6, 12, 5,
         -6, -12, -5, -6, 12, 5, -6, 12, -5,
 
@@ -952,19 +952,19 @@ function createBox(width, height, depth, material) {
     const w = width / 2, h = height / 2, d = depth / 2;
 
     const vertices = new Float32Array([
-        // Frente
+        // Front
         -w, -h, d, w, -h, d, w, h, d,
         -w, -h, d, w, h, d, -w, h, d,
-        // Trás
+        // Back
         -w, -h, -d, -w, h, -d, w, h, -d,
         -w, -h, -d, w, h, -d, w, -h, -d,
-        // Esquerda
+        // Left
         -w, -h, -d, -w, -h, d, -w, h, d,
         -w, -h, -d, -w, h, d, -w, h, -d,
-        // Direita
+        // Right
         w, -h, -d, w, h, -d, w, h, d,
         w, -h, -d, w, h, d, w, -h, d,
-        // Topo
+        // Top
         -w, h, -d, -w, h, d, w, h, d,
         -w, h, -d, w, h, d, w, h, -d,
         // Base
@@ -1147,15 +1147,6 @@ function setShadingMode(mode) {
 
 function toggleLighting() {
     lightingEnabled = !lightingEnabled;
-    // Toggle all lights in the scene
-    // if (directionalLight) directionalLight.visible = lightingEnabled;
-    // if (ufoBeamMesh) {
-    //     const spotLight = ufoBeamMesh.children.find(child => child instanceof THREE.SpotLight);
-    //     if (spotLight) spotLight.visible = lightingEnabled;
-    // }
-    // for (let i = 0; i < ufoLights.length; i++) {
-    //     ufoLights[i].visible = lightingEnabled;
-    // }
     applyShadingToScene();
 }
 
@@ -1323,12 +1314,10 @@ function updateLookingAt() {
 }
 
 function animate() {
-    //requestAnimationFrame(animate);
     updateLookingAt();
     updateUFOMovement();
     if (controls) controls.update();
     if (scene && camera) renderer.render(scene, camera);
 }
 
-// Initialize the application
 init();
